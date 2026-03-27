@@ -1,0 +1,15 @@
+@import "tailwindcss";
+/* Ẩn icon con mắt mặc định trên các trình duyệt dùng nhân Chromium (Edge, Chrome) */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* Ẩn các nút điều khiển mật khẩu mặc định khác nếu có */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
