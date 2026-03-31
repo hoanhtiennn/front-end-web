@@ -1,29 +1,32 @@
-const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, isLocating }) => (
-  <section className="container mx-auto px-6 -mt-16 relative z-10">
-    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-4 items-stretch">
-      <button 
-        onClick={onLocationClick} 
-        disabled={isLocating}
-        className="group flex flex-col items-center justify-center gap-1 rounded-3xl bg-rose-600 px-8 py-5 text-white shadow-2xl shadow-rose-200 transition-all hover:bg-rose-700 active:scale-95 md:w-48"
-      >
-        <span className="text-2xl group-hover:animate-bounce">📍</span>
-        <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">
-          {isLocating ? "Đang quét..." : "Tìm gần tôi"}
-        </span>
-      </button>
-
-      <div className="grow backdrop-blur-lg bg-white/95 p-3 rounded-4xl shadow-2xl shadow-zinc-900/5 ring-1 ring-zinc-100 flex items-center gap-3">
-        <div className="flex grow items-center gap-3 rounded-full bg-zinc-100 px-6 py-4 transition-all focus-within:ring-2 focus-within:ring-rose-300">
-          <span className="text-zinc-400 font-black">🔍</span>
-          <input 
-            type="text" 
-            placeholder="Nhập địa chỉ, quận hoặc tên đường..." 
-            className="w-full bg-transparent outline-none text-zinc-800 placeholder-zinc-400 text-lg font-medium"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <button className="hidden md:block rounded-full bg-zinc-900 px-10 py-4 text-lg font-bold text-white hover:bg-black transition-colors">Tìm kiếm</button>
+const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLocating }) => (
+  <section className="container mx-auto px-4 mt-6 mb-8">
+    <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-2 border border-gray-300 p-3 rounded bg-white shadow-sm">
+      <div className="flex grow items-center gap-2 border border-gray-300 bg-white px-3 py-2 rounded focus-within:border-blue-500">
+        <span className="text-gray-500 font-bold">🔍</span>
+        <input 
+          type="text" 
+          placeholder="Nhập địa chỉ, quận hoặc tên đường..." 
+          className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 text-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onSearch()}
+        />
+      </div>
+      <div className="flex gap-2">
+        <button 
+          onClick={onLocationClick} 
+          disabled={isLocating}
+          className="flex items-center justify-center gap-1 rounded bg-blue-100 px-4 py-2 text-blue-700 hover:bg-blue-200 border border-blue-200 whitespace-nowrap text-sm font-bold disabled:opacity-50"
+        >
+          <span>📍</span>
+          <span>{isLocating ? "Đang quét..." : "Tìm gần tôi"}</span>
+        </button>
+        <button 
+          onClick={onSearch}
+          className="hidden md:block rounded bg-blue-600 px-6 py-2 text-sm font-bold text-white hover:bg-blue-700"
+        >
+          Tìm kiếm
+        </button>
       </div>
     </div>
   </section>

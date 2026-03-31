@@ -1,51 +1,57 @@
 import { useUser } from "../contexts/UserContext";
 
-const Navbar = ({ onAuthClick }) => {
+const Navbar = ({ onAuthClick, onEditProfileClick }) => {
   const { user, logout } = useUser();
   return (
-    <nav className="sticky top-0 z-40 backdrop-blur-md bg-white/70 border-b border-zinc-100 px-8 py-4 flex justify-between items-center">
-      <div className="text-2xl font-black tracking-tighter text-rose-600 italic cursor-pointer">
+    <nav className="bg-white border-b border-gray-300 px-8 py-4 flex justify-between items-center">
+      <div className="text-xl font-bold text-blue-600 cursor-pointer">
         PRO.STAY
       </div>
       <div className="flex items-center gap-4">
         {!user ? (
-          <div className="flex items-center gap-2">
+          <div>
             <button
               onClick={() => onAuthClick("LOGIN")}
-              className="px-5 py-2 text-sm font-bold text-zinc-600 hover:text-rose-600 transition-colors"
+              className="text-blue-600 mr-4 hover:underline"
             >
               Đăng nhập
             </button>
             <button
               onClick={() => onAuthClick("REGISTER")}
-              className="bg-zinc-900 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-xl shadow-zinc-200 hover:bg-rose-600 transition-all active:scale-95"
+              className="bg-blue-600 text-white px-4 py-2 rounded"
             >
-              Đăng ký ngay
+              Đăng ký
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-5">
-            <div className="flex flex-col items-end">
-              <span className="text-sm font-black text-zinc-900 leading-none">
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col text-right">
+              <span className="font-bold text-gray-800">
                 {user.name}
               </span>
-              <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-1">
-                {user.role === "ADMIN"
-                  ? "Admin"
-                  : user.role === "LANDLORD"
-                    ? "Chủ cho thuê"
-                    : "Người tìm phòng"}
+              <span className="text-xs text-gray-500">
+                ({user.role})
               </span>
             </div>
-            <div className="h-9 w-9 rounded-full bg-zinc-100 border-2 border-rose-500 flex items-center justify-center font-bold text-rose-600">
-              {user.name[0]}
+            
+            {user.avatarUrl && (
+              <img src={user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full border border-gray-300 object-cover" />
+            )}
+            
+            <div className="flex gap-3 ml-2 border-l border-gray-300 pl-4">
+              <button
+                onClick={onEditProfileClick}
+                className="text-blue-600 text-sm hover:underline"
+              >
+                Sửa hồ sơ
+              </button>
+              <button
+                onClick={logout}
+                className="text-red-500 text-sm hover:underline"
+              >
+                Đăng xuất
+              </button>
             </div>
-            <button
-              onClick={logout}
-              className="text-zinc-400 hover:text-red-500 font-bold text-xs uppercase tracking-tight"
-            >
-              Thoát
-            </button>
           </div>
         )}
       </div>
