@@ -157,9 +157,11 @@ const AddRoomForm = ({ onBack }) => {
                 className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500 bg-white"
               >
                 <option value="PHONG_TRO_GAC">Phòng trọ có gác</option>
-                <option value="PHONG_KEP">Phòng khép kín</option>
+                <option value="PHONG_TRO">Phòng trọ</option>
+                <option value="CHUNG_CU_MINI">Chung cư mini</option>
                 <option value="NHA_NGUYEN_CAN">Nhà nguyên căn</option>
-                <option value="CAN_HO_DICH_VU">Căn hộ dịch vụ</option>
+                <option value="PHONG_GEP">Phòng ghép</option>
+                <option value="KI_TUC_XA">Kí túc xá</option>
               </select>
             </div>
           </div>
