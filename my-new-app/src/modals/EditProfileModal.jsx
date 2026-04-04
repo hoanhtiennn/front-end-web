@@ -9,6 +9,7 @@ const EditProfileModal = ({ onBack }) => {
   
   // Tải ảnh đại diện
   const [previewAvatar, setPreviewAvatar] = useState(user.avatarUrl || "");
+  const [avatarBlob, setAvatarBlob] = useState(null);
   const fileInputRef = useRef(null);
 
   // Xóa tài khoản
@@ -52,7 +53,12 @@ const EditProfileModal = ({ onBack }) => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Quality 0.6 siêu nén nhẹ như lông hồng
+        // Tạo blob chuẩn File để gửi lên Backend
+        canvas.toBlob((blob) => {
+          setAvatarBlob(blob);
+        }, "image/jpeg", 0.6);
+
+        // Vẫn giữ Base64 để hiển thị chớp nhoáng trên giao diện web
         const base64DataUrl = canvas.toDataURL("image/jpeg", 0.6);
         setPreviewAvatar(base64DataUrl);
         setError(""); // Clear error nếu có
@@ -76,20 +82,25 @@ const EditProfileModal = ({ onBack }) => {
     try {
       if (!user.id) throw new Error("Chưa có ID người dùng, vui lòng đăng nhập lại!");
 
-      const payload = {
-        full_name: fullName,
-        phone: phone,
-        avatar_url: previewAvatar,
-        plan: user.plan || "FREE"
-      };
+      // Dùng FormData thay vì JSON chuẩn để Backend có thể đọc file
+      const apiFormData = new FormData();
+      apiFormData.append("fullName", fullName);
+      apiFormData.append("full_name", fullName); // Gửi cả 2 tên đề phòng backend dùng snake_case
+      apiFormData.append("phone", phone);
+      apiFormData.append("plan", user.plan || "FREE");
 
-      // Chỉ gởi request có password nếu người dùng thực sự nhập pass mới vào ô
-      if (password && password.trim().length > 0) {
-        payload.password = password.trim();
+      // Luôn gửi password (dù là rỗng) để Backend không bị lỗi NULL Pointer Exception khi gọi .strip()
+      apiFormData.append("password", password ? password.trim() : "");
+
+      if (avatarBlob) {
+        apiFormData.append("avatar", avatarBlob, "avatar.jpg");
       }
 
-      const response = await axios.put(`/api/users/${user.id}`, payload, {
-        headers: { Authorization: `Bearer ${user.token}` }
+      const response = await axios.put(`/api/users/${user.id}`, apiFormData, {
+        headers: { 
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "multipart/form-data"
+        }
       });
       
       const userData = response.data;

@@ -20,8 +20,23 @@ const AddRoomForm = ({ onBack }) => {
     price: "",
     area: "",
     roomType: "PHONG_TRO_GAC",
-    amenities: "",
   });
+  
+  const [selectedAmenities, setSelectedAmenities] = useState([]);
+
+  const COMMON_AMENITIES = [
+    "Máy lạnh", "Tủ lạnh", "Tủ đồ", "Giường", 
+    "Wifi", "Máy giặt", "Chỗ để xe", "Bếp", 
+    "Thang máy", "Tự do giờ giấc"
+  ];
+
+  const toggleAmenity = (amenity) => {
+    if (selectedAmenities.includes(amenity)) {
+      setSelectedAmenities(selectedAmenities.filter(a => a !== amenity));
+    } else {
+      setSelectedAmenities([...selectedAmenities, amenity]);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -44,26 +59,86 @@ const AddRoomForm = ({ onBack }) => {
         throw new Error("Vui lòng đăng nhập để đăng bài.");
       }
 
+      // Gộp dòng địa chỉ để gửi cho API Nominatim và lưu thẳng vào Backend
+      const fullAddress = [formData.address, formData.ward, formData.district, formData.city]
+        .map(p => p && p.trim())
+        .filter(Boolean)
+        .join(", ");
+
       // Theo Swagger UI, backend mong đợi các trường text là Query Parameters
       // và phần hình ảnh (images) thì gói trong FormData của Body.
       const queryParams = new URLSearchParams();
       queryParams.append("title", formData.title);
       queryParams.append("description", formData.description);
-      queryParams.append("address", formData.address);
+      
+      // Khéo léo gộp địa chỉ đầy đủ vào cột address để Frontend lúc get hiển thị không bị cụt
+      queryParams.append("address", fullAddress);
+      
+      // Vẫn gửi kèm các trường này phòng trường hợp Backend validation bị lỗi nếu thiếu
       queryParams.append("ward", formData.ward);
       queryParams.append("district", formData.district);
       queryParams.append("city", formData.city);
-      // Optional coordinates
-      queryParams.append("latitude", "10.762622"); // Default HCM
-      queryParams.append("longitude", "106.660172");
+
+      let lat = "10.762622"; // Default HCM
+      let lng = "106.660172";
+
+      try {
+        const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
+        let isGoongSuccess = false;
+
+        // Ưu tiên 1: Dùng Goong API (Độ chính xác rất cao tại VN)
+        if (GOONG_KEY && GOONG_KEY.trim() !== "") {
+          try {
+            const goongUrl = `https://rsapi.goong.io/geocode?address=${encodeURIComponent(fullAddress)}&api_key=${GOONG_KEY.trim()}`;
+            const goongRes = await axios.get(goongUrl);
+            if (goongRes.data && goongRes.data.results && goongRes.data.results.length > 0) {
+              lat = goongRes.data.results[0].geometry.location.lat;
+              lng = goongRes.data.results[0].geometry.location.lng;
+              isGoongSuccess = true;
+            }
+          } catch (goongErr) {
+            console.warn("Goong API bị lỗi (có thể do Key hết hạn hoặc sai), chuyển API khác:", goongErr);
+          }
+        }
+
+        // Ưu tiên 2: Fallback sang Nominatim nếu Goong thất bại hoặc thiếu Key
+        if (!isGoongSuccess) {
+          const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
+          const geoRes = await axios.get(searchUrl, {
+            headers: { 'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7' }
+          });
+          
+          if (geoRes.data && geoRes.data.length > 0) {
+            lat = geoRes.data[0].lat;
+            lng = geoRes.data[0].lon;
+          } else {
+            console.warn("Không tìm ra địa chỉ chi tiết, đang thử lấy vị trí Phường/Quận...");
+            const shortAddress = `${formData.ward}, ${formData.district}, ${formData.city}`;
+            const fallbackRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(shortAddress)}`, {
+              headers: { 'Accept-Language': 'vi-VN' }
+            });
+            if (fallbackRes.data && fallbackRes.data.length > 0) {
+              lat = fallbackRes.data[0].lat;
+              lng = fallbackRes.data[0].lon;
+            } else {
+              console.warn("Cả hai API đều không tìm thấy tọa độ. Dùng mặc định.");
+            }
+          }
+        }
+      } catch (geoErr) {
+        console.warn("Lỗi gọi API toạ độ:", geoErr);
+      }
+
+      // Gắn toạ độ thật vào request
+      queryParams.append("latitude", lat);
+      queryParams.append("longitude", lng);
       queryParams.append("price", formData.price.replace(/,/g, ""));
       queryParams.append("area", formData.area);
       queryParams.append("roomType", formData.roomType);
       
-      // Parse amenities (comma separated string -> array of strings for Spring)
-      const amenityList = formData.amenities.split(",").map((a) => a.trim()).filter((a) => a);
-      if (amenityList.length > 0) {
-        amenityList.forEach((amenity) => {
+      // Thêm danh sách tiện ích đã chọn
+      if (selectedAmenities.length > 0) {
+        selectedAmenities.forEach((amenity) => {
           queryParams.append("amenities", amenity);
         });
       }
@@ -194,7 +269,28 @@ const AddRoomForm = ({ onBack }) => {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">m²</span>
               </div>
             </div>
-            <input type="text" name="amenities" required value={formData.amenities} onChange={handleChange} placeholder="Tiện ích (Máy lạnh, Nhà vệ sinh riêng)..." className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500" />
+            
+            {/* Box chọn Tiện ích dạng nút */}
+            <div>
+              <p className="text-sm font-bold text-gray-700 block mb-2 mt-1">Tiện ích sẵn có</p>
+              <div className="flex flex-wrap gap-2">
+                {COMMON_AMENITIES.map(amenity => (
+                  <button
+                    key={amenity}
+                    type="button"
+                    onClick={() => toggleAmenity(amenity)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full border transition-all duration-200 active:scale-95 ${
+                      selectedAmenities.includes(amenity) 
+                        ? "bg-blue-100 border-blue-500 text-blue-700 shadow-sm" 
+                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {selectedAmenities.includes(amenity) ? "✓ " : "+ "} {amenity}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <textarea
               name="description"
               required
