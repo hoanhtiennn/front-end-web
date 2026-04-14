@@ -1,347 +1,382 @@
 import { useState } from "react";
 import axios from "axios";
 import { useUser } from "../contexts/UserContext";
+import {
+  X, ImagePlus, MapPin, Home, DollarSign, Maximize2,
+  AlignLeft, CheckCircle2, Loader2, FileText, Info
+} from "lucide-react";
+
+const ROOM_TYPES = [
+  { value: "PHONG_TRO_GAC", label: "Phòng trọ có gác" },
+  { value: "PHONG_TRO",     label: "Phòng trọ" },
+  { value: "CHUNG_CU_MINI", label: "Chung cư mini" },
+  { value: "NHA_NGUYEN_CAN",label: "Nhà nguyên căn" },
+  { value: "PHONG_GEP",     label: "Phòng ghép" },
+  { value: "KI_TUC_XA",     label: "Ký túc xá" },
+];
+
+const AMENITIES = [
+  { icon: "❄️", label: "Máy lạnh" },
+  { icon: "🧊", label: "Tủ lạnh" },
+  { icon: "🚿", label: "Vệ sinh riêng" },
+  { icon: "🛏️", label: "Giường" },
+  { icon: "📶", label: "Wifi" },
+  { icon: "🫧", label: "Máy giặt" },
+  { icon: "🏍️", label: "Chỗ để xe" },
+  { icon: "🍳", label: "Bếp" },
+  { icon: "🛗", label: "Thang máy" },
+  { icon: "🕐", label: "Tự do giờ giấc" },
+  { icon: "🪑", label: "Tủ đồ" },
+  { icon: "📺", label: "Tivi" },
+];
+
+const SectionTitle = ({ icon: Icon, children }) => (
+  <div className="flex items-center gap-2 mb-3">
+    <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+      <Icon className="w-3.5 h-3.5 text-cyan-400" />
+    </div>
+    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{children}</h3>
+  </div>
+);
+
+const Field = ({ label, children }) => (
+  <div className="space-y-1.5">
+    {label && <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>}
+    {children}
+  </div>
+);
+
+const inputCls = "w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-2.5 px-4 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-500/60 focus:bg-gray-900 transition-all";
+
+const PLAN_LIMITS = { FREE: 3, PRO: 33, ULTRA: 103 };
 
 const AddRoomForm = ({ onBack }) => {
-  const { user } = useUser();
+  const { user, updateUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  // States for form inputs
   const [images, setImages] = useState([]);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    address: "",
-    ward: "",
-    district: "",
-    city: "",
-    price: "",
-    area: "",
-    roomType: "PHONG_TRO_GAC",
-  });
-  
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [formData, setFormData] = useState({
+    title: "", description: "", address: "", ward: "",
+    district: "", city: "", price: "", area: "", roomType: "PHONG_TRO_GAC",
+  });
 
-  const COMMON_AMENITIES = [
-    "Máy lạnh", "Tủ lạnh", "Tủ đồ", "Giường", 
-    "Wifi", "Máy giặt", "Chỗ để xe", "Bếp", 
-    "Thang máy", "Tự do giờ giấc"
-  ];
+  // Số bài còn có thể đăng (lấy trực tiếp từ backend)
+  const remaining   = user?.remainingPosts ?? 0;
+  const isExhausted = remaining <= 0;
 
-  const toggleAmenity = (amenity) => {
-    if (selectedAmenities.includes(amenity)) {
-      setSelectedAmenities(selectedAmenities.filter(a => a !== amenity));
-    } else {
-      setSelectedAmenities([...selectedAmenities, amenity]);
-    }
-  };
+  const toggleAmenity = (label) =>
+    setSelectedAmenities(prev =>
+      prev.includes(label) ? prev.filter(a => a !== label) : [...prev, label]
+    );
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) =>
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleImageChange = (e) => {
-    if (e.target.files) {
-      setImages(Array.from(e.target.files));
-    }
+    const files = Array.from(e.target.files || []);
+    setImages(files);
+    setImagePreviews(files.map(f => URL.createObjectURL(f)));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    if (isExhausted) { setError("Bạn đã hết lượt đăng bài. Vui lòng nâng cấp gói!"); return; }
+    setError(""); setLoading(true);
 
     try {
       const token = localStorage.getItem("userToken");
-      if (!token) {
-        throw new Error("Vui lòng đăng nhập để đăng bài.");
-      }
+      if (!token) throw new Error("Vui lòng đăng nhập để đăng bài.");
 
-      // Gộp dòng địa chỉ để gửi cho API Nominatim và lưu thẳng vào Backend
       const fullAddress = [formData.address, formData.ward, formData.district, formData.city]
-        .map(p => p && p.trim())
-        .filter(Boolean)
-        .join(", ");
+        .map(p => p?.trim()).filter(Boolean).join(", ");
 
-      // Theo Swagger UI, backend mong đợi các trường text là Query Parameters
-      // và phần hình ảnh (images) thì gói trong FormData của Body.
-      const queryParams = new URLSearchParams();
-      queryParams.append("title", formData.title);
-      queryParams.append("description", formData.description);
-      
-      // Khéo léo gộp địa chỉ đầy đủ vào cột address để Frontend lúc get hiển thị không bị cụt
-      queryParams.append("address", fullAddress);
-      
-      // Vẫn gửi kèm các trường này phòng trường hợp Backend validation bị lỗi nếu thiếu
-      queryParams.append("ward", formData.ward);
-      queryParams.append("district", formData.district);
-      queryParams.append("city", formData.city);
+      const qp = new URLSearchParams();
+      qp.append("title", formData.title);
+      qp.append("description", formData.description);
+      qp.append("address", fullAddress);
+      qp.append("ward", formData.ward);
+      qp.append("district", formData.district);
+      qp.append("city", formData.city);
 
-      let lat = "10.762622"; // Default HCM
-      let lng = "106.660172";
-
+      let lat = "10.762622", lng = "106.660172";
       try {
         const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
-        let isGoongSuccess = false;
-
-        // Ưu tiên 1: Dùng Goong API (Độ chính xác rất cao tại VN)
-        if (GOONG_KEY && GOONG_KEY.trim() !== "") {
-          try {
-            const goongUrl = `https://rsapi.goong.io/geocode?address=${encodeURIComponent(fullAddress)}&api_key=${GOONG_KEY.trim()}`;
-            const goongRes = await axios.get(goongUrl);
-            if (goongRes.data && goongRes.data.results && goongRes.data.results.length > 0) {
-              lat = goongRes.data.results[0].geometry.location.lat;
-              lng = goongRes.data.results[0].geometry.location.lng;
-              isGoongSuccess = true;
-            }
-          } catch (goongErr) {
-            console.warn("Goong API bị lỗi (có thể do Key hết hạn hoặc sai), chuyển API khác:", goongErr);
+        if (GOONG_KEY?.trim()) {
+          const gr = await axios.get(`https://rsapi.goong.io/geocode?address=${encodeURIComponent(fullAddress)}&api_key=${GOONG_KEY.trim()}`);
+          if (gr.data?.results?.length > 0) {
+            lat = gr.data.results[0].geometry.location.lat;
+            lng = gr.data.results[0].geometry.location.lng;
           }
-        }
-
-        // Ưu tiên 2: Fallback sang Nominatim nếu Goong thất bại hoặc thiếu Key
-        if (!isGoongSuccess) {
-          const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`;
-          const geoRes = await axios.get(searchUrl, {
-            headers: { 'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7' }
+        } else {
+          const nr = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`, {
+            headers: { "Accept-Language": "vi-VN" }
           });
-          
-          if (geoRes.data && geoRes.data.length > 0) {
-            lat = geoRes.data[0].lat;
-            lng = geoRes.data[0].lon;
-          } else {
-            console.warn("Không tìm ra địa chỉ chi tiết, đang thử lấy vị trí Phường/Quận...");
-            const shortAddress = `${formData.ward}, ${formData.district}, ${formData.city}`;
-            const fallbackRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(shortAddress)}`, {
-              headers: { 'Accept-Language': 'vi-VN' }
-            });
-            if (fallbackRes.data && fallbackRes.data.length > 0) {
-              lat = fallbackRes.data[0].lat;
-              lng = fallbackRes.data[0].lon;
-            } else {
-              console.warn("Cả hai API đều không tìm thấy tọa độ. Dùng mặc định.");
-            }
-          }
+          if (nr.data?.length > 0) { lat = nr.data[0].lat; lng = nr.data[0].lon; }
         }
-      } catch (geoErr) {
-        console.warn("Lỗi gọi API toạ độ:", geoErr);
-      }
+      } catch (_) { /* dùng default */ }
 
-      // Gắn toạ độ thật vào request
-      queryParams.append("latitude", lat);
-      queryParams.append("longitude", lng);
-      queryParams.append("price", formData.price.replace(/,/g, ""));
-      queryParams.append("area", formData.area);
-      queryParams.append("roomType", formData.roomType);
-      
-      // Thêm danh sách tiện ích đã chọn
-      if (selectedAmenities.length > 0) {
-        selectedAmenities.forEach((amenity) => {
-          queryParams.append("amenities", amenity);
-        });
-      }
+      qp.append("latitude", lat);
+      qp.append("longitude", lng);
+      qp.append("price", formData.price.replace(/,/g, ""));
+      qp.append("area", formData.area);
+      qp.append("roomType", formData.roomType);
+      selectedAmenities.forEach(a => qp.append("amenities", a));
 
-      // Chuẩn bị form-data body chỉ chứa hình ảnh
       const data = new FormData();
-      if (images.length > 0) {
-        images.forEach((file) => {
-          data.append("images", file);
-        });
-      }
+      images.forEach(f => data.append("images", f));
 
-      const url = `/api/posts?${queryParams.toString()}`;
-
-      // Gửi request tới backend
-      await axios.post(url, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      await axios.post(`/api/posts?${qp.toString()}`, data, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
       });
 
+      // Giảm số lượt trong context tạm thời (sẽ được sync lại khi load trang)
+      updateUser({ remainingPosts: remaining - 1 });
       setSuccess(true);
-      setTimeout(() => {
-        onBack();
-      }, 1500); // Tự động đóng sau 1.5s
+      setTimeout(() => onBack(), 2000);
     } catch (err) {
-      setError(
-        err.response?.data?.message || err.message || "Đã có lỗi xảy ra. Vui lòng thử lại!"
-      );
+      setError(err.response?.data?.message || err.message || "Đã có lỗi xảy ra!");
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-        <div className="w-full max-w-sm bg-white p-6 rounded shadow border border-gray-300 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+  // SUCCESS SCREEN
+  if (success) return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm bg-[#0D1117] border border-gray-800 rounded-2xl p-8 text-center animate-[fadeUp_0.4s_ease-out]">
+        <div className="relative w-20 h-20 mx-auto mb-5">
+          <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
+          <div className="relative w-20 h-20 bg-emerald-500/10 rounded-full border border-emerald-500/30 flex items-center justify-center">
+            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Đăng bài thành công!</h2>
-          <p className="text-sm text-gray-500">Tin đăng của bạn đã được ghi nhận.</p>
         </div>
+        <h2 className="text-2xl font-black text-white mb-2">Đăng tin thành công!</h2>
+        <p className="text-gray-400 text-sm">Tin đăng của bạn đã được ghi nhận và đang chờ duyệt.</p>
+        <p className="text-xs text-gray-600 mt-3">Tự động đóng...</p>
       </div>
-    );
-  }
+      <style dangerouslySetInnerHTML={{__html:`@keyframes fadeUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}} />
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 md:p-6 overflow-hidden">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded shadow border border-gray-300">
-        <div className="sticky top-0 z-10 bg-gray-100 px-6 py-4 border-b border-gray-300 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-800">
-            ĐĂNG TIN PHÒNG MỚI
-          </h2>
-          <button onClick={onBack} className="text-gray-500 hover:text-gray-700 font-bold p-1">
-            ✕
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-2xl bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] animate-[fadeUp_0.3s_ease-out]">
+
+        {/* Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 bg-cyan-500/8 rounded-full blur-[60px] pointer-events-none" />
+
+        {/* HEADER */}
+        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white leading-tight">Đăng tin phòng mới</h2>
+              <p className="text-xs text-gray-500">Điền đầy đủ thông tin để tiếp cận sinh viên</p>
+            </div>
+          </div>
+          <button onClick={onBack} className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="text-sm text-red-600 bg-red-100 p-2 rounded border border-red-200 text-center">
-              {error}
-            </div>
-          )}
+        {/* POST QUOTA BANNER */}
+        <div className={`mx-6 mt-4 rounded-xl px-4 py-3 flex items-center gap-3 border shrink-0 ${
+          isExhausted
+            ? "bg-rose-500/10 border-rose-500/30"
+            : remaining <= 3
+            ? "bg-amber-500/10 border-amber-500/30"
+            : "bg-gray-900/50 border-gray-800"
+        }`}>
+          <Info className={`w-4 h-4 shrink-0 ${isExhausted ? "text-rose-400" : remaining <= 3 ? "text-amber-400" : "text-gray-500"}`} />
+          <div className="flex-1 text-sm">
+            {isExhausted ? (
+              <span className="text-rose-400 font-semibold">Bạn đã hết lượt đăng bài! Nâng cấp gói để tiếp tục.</span>
+            ) : (
+              <span className={remaining <= 3 ? "text-amber-300" : "text-gray-400"}>
+                Lượt đăng còn lại:{" "}
+                <strong className={remaining <= 3 ? "text-amber-300" : "text-white"}>
+                  {remaining}
+                </strong>
+              </span>
+            )}
+          </div>
+          {/* Progress bar — ẩn nếu không biết tổng */}
+          <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden shrink-0">
+            <div
+              className={`h-full rounded-full transition-all ${
+                isExhausted ? "bg-rose-500" : remaining <= 3 ? "bg-amber-400" : "bg-cyan-500"
+              }`}
+              style={{ width: remaining > 0 ? "50%" : "0%" }}
+            />
+          </div>
+        </div>
 
-          {/* Tiêu đề & Loại phòng */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-700 uppercase">
-              Thông tin cơ bản
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                name="title"
-                required
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Tiêu đề bài đăng..."
-                className="w-full md:col-span-2 rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500"
-              />
-              <select
-                name="roomType"
-                required
-                value={formData.roomType}
-                onChange={handleChange}
-                className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500 bg-white"
-              >
-                <option value="PHONG_TRO_GAC">Phòng trọ có gác</option>
-                <option value="PHONG_TRO">Phòng trọ</option>
-                <option value="CHUNG_CU_MINI">Chung cư mini</option>
-                <option value="NHA_NGUYEN_CAN">Nhà nguyên căn</option>
-                <option value="PHONG_GEP">Phòng ghép</option>
-                <option value="KI_TUC_XA">Kí túc xá</option>
-              </select>
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+          {/* Thông tin cơ bản */}
+          <div>
+            <SectionTitle icon={Home}>Thông tin cơ bản</SectionTitle>
+            <div className="space-y-3">
+              <Field>
+                <input type="text" name="title" required value={formData.title}
+                  onChange={handleChange} placeholder="Tiêu đề bài đăng (VD: Phòng trọ giá rẻ quận 1...)"
+                  className={inputCls} />
+              </Field>
+              <Field label="Loại phòng">
+                <select name="roomType" required value={formData.roomType}
+                  onChange={handleChange}
+                  className={`${inputCls} bg-gray-900`}>
+                  {ROOM_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </Field>
             </div>
           </div>
 
-          {/* Vị trí */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-700 uppercase">
-              Địa chỉ
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input type="text" name="city" required value={formData.city} onChange={handleChange} placeholder="Thành phố" className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500" />
-              <input type="text" name="district" required value={formData.district} onChange={handleChange} placeholder="Quận/Huyện" className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500" />
-              <input type="text" name="ward" required value={formData.ward} onChange={handleChange} placeholder="Phường/Xã" className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500" />
+          {/* Địa chỉ */}
+          <div>
+            <SectionTitle icon={MapPin}>Địa chỉ</SectionTitle>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <Field>
+                  <input type="text" name="city" required value={formData.city}
+                    onChange={handleChange} placeholder="Thành phố" className={inputCls} />
+                </Field>
+                <Field>
+                  <input type="text" name="district" required value={formData.district}
+                    onChange={handleChange} placeholder="Quận/Huyện" className={inputCls} />
+                </Field>
+                <Field>
+                  <input type="text" name="ward" required value={formData.ward}
+                    onChange={handleChange} placeholder="Phường/Xã" className={inputCls} />
+                </Field>
+              </div>
+              <Field>
+                <input type="text" name="address" required value={formData.address}
+                  onChange={handleChange} placeholder="Số nhà, tên đường..."
+                  className={inputCls} />
+              </Field>
             </div>
-            <input type="text" name="address" required value={formData.address} onChange={handleChange} placeholder="Địa chỉ chi tiết (số nhà, tên đường)..." className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500" />
           </div>
 
-          {/* Chi tiết cho thuê */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-700 uppercase">
-              Chi tiết phòng
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="relative">
-                <input type="number" name="price" required value={formData.price} onChange={handleChange} placeholder="Giá" className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500 pr-12" />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">VNĐ</span>
-              </div>
-              <div className="relative">
-                <input type="number" name="area" required value={formData.area} onChange={handleChange} placeholder="Diện tích" className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500 pr-10" />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">m²</span>
+          {/* Chi tiết phòng */}
+          <div>
+            <SectionTitle icon={DollarSign}>Chi tiết phòng</SectionTitle>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Giá thuê (VNĐ/tháng)">
+                  <div className="relative">
+                    <input type="number" name="price" required value={formData.price}
+                      onChange={handleChange} placeholder="VD: 3000000"
+                      className={`${inputCls} pr-12`} />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">VNĐ</span>
+                  </div>
+                </Field>
+                <Field label="Diện tích (m²)">
+                  <div className="relative">
+                    <input type="number" name="area" required value={formData.area}
+                      onChange={handleChange} placeholder="VD: 20"
+                      className={`${inputCls} pr-10`} />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">m²</span>
+                  </div>
+                </Field>
               </div>
             </div>
-            
-            {/* Box chọn Tiện ích dạng nút */}
-            <div>
-              <p className="text-sm font-bold text-gray-700 block mb-2 mt-1">Tiện ích sẵn có</p>
-              <div className="flex flex-wrap gap-2">
-                {COMMON_AMENITIES.map(amenity => (
-                  <button
-                    key={amenity}
-                    type="button"
-                    onClick={() => toggleAmenity(amenity)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-full border transition-all duration-200 active:scale-95 ${
-                      selectedAmenities.includes(amenity) 
-                        ? "bg-blue-100 border-blue-500 text-blue-700 shadow-sm" 
-                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    {selectedAmenities.includes(amenity) ? "✓ " : "+ "} {amenity}
+          </div>
+
+          {/* Tiện ích */}
+          <div>
+            <SectionTitle icon={CheckCircle2}>Tiện ích sẵn có</SectionTitle>
+            <div className="flex flex-wrap gap-2">
+              {AMENITIES.map(({ icon, label }) => {
+                const active = selectedAmenities.includes(label);
+                return (
+                  <button key={label} type="button" onClick={() => toggleAmenity(label)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 active:scale-95 ${
+                      active
+                        ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
+                        : "bg-gray-900/50 border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                    }`}>
+                    <span>{icon}</span>
+                    {label}
+                    {active && <span className="ml-0.5 text-cyan-400">✓</span>}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          </div>
 
-            <textarea
-              name="description"
-              required
-              rows="4"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Mô tả chi tiết..."
-              className="w-full rounded border border-gray-300 p-2 text-gray-900 focus:outline-none focus:border-blue-500 resize-none"
-            ></textarea>
+          {/* Mô tả */}
+          <div>
+            <SectionTitle icon={AlignLeft}>Mô tả chi tiết</SectionTitle>
+            <textarea name="description" required rows={4} value={formData.description}
+              onChange={handleChange} placeholder="Mô tả chi tiết về phòng, khu vực xung quanh, nội quy..."
+              className={`${inputCls} resize-none leading-relaxed`} />
           </div>
 
           {/* Hình ảnh */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-700 uppercase">
-              Hình ảnh phòng
-            </h3>
-            <label className="flex flex-col items-center justify-center w-full min-h-[120px] border-2 border-gray-300 border-dashed rounded bg-gray-50 hover:bg-gray-100 cursor-pointer">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <span className="text-3xl text-gray-400 mb-2">📸</span>
-                <p className="text-sm text-gray-600">
-                  Nhấn để chọn ảnh (Nhiều ảnh)
-                </p>
-              </div>
-              <input type="file" name="images" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
+          <div>
+            <SectionTitle icon={ImagePlus}>Hình ảnh phòng</SectionTitle>
+            <label className={`flex flex-col items-center justify-center w-full min-h-[110px] border-2 rounded-xl cursor-pointer transition-all ${
+              imagePreviews.length > 0
+                ? "border-cyan-500/40 bg-cyan-500/5"
+                : "border-gray-700 border-dashed bg-gray-900/40 hover:border-gray-500 hover:bg-gray-900/60"
+            }`}>
+              {imagePreviews.length > 0 ? (
+                <div className="flex gap-2 p-3 flex-wrap justify-center">
+                  {imagePreviews.map((src, i) => (
+                    <img key={i} src={src} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-700" />
+                  ))}
+                  <div className="h-16 w-16 rounded-lg border border-dashed border-gray-600 flex items-center justify-center text-gray-500 text-xs">+Thêm</div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-6 text-gray-500">
+                  <ImagePlus className="w-8 h-8 mb-2 text-gray-600" />
+                  <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
+                  <p className="text-xs text-gray-600 mt-1">Có thể chọn nhiều ảnh cùng lúc</p>
+                </div>
+              )}
+              <input type="file" name="images" multiple accept="image/*"
+                onChange={handleImageChange} className="hidden" />
             </label>
-            {images.length > 0 && (
-              <p className="text-xs text-blue-600 font-bold px-1">
-                Đã chọn {images.length} ảnh.
-              </p>
+            {imagePreviews.length > 0 && (
+              <p className="text-xs text-cyan-400 font-medium mt-1.5 px-1">✓ Đã chọn {imagePreviews.length} ảnh</p>
             )}
           </div>
 
-          <div className="pt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={onBack}
-              disabled={loading}
-              className="w-1/3 py-2 rounded border border-gray-300 bg-white text-gray-700 font-bold hover:bg-gray-100 disabled:opacity-50"
-            >
-              Hủy
+          {/* ERROR */}
+          {error && (
+            <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* BUTTONS */}
+          <div className="flex gap-3 pt-1 pb-2">
+            <button type="button" onClick={onBack} disabled={loading}
+              className="w-1/3 py-3 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 hover:text-white transition-all disabled:opacity-50">
+              Huỷ
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-2/3 py-2 rounded bg-blue-600 font-bold text-white hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center gap-2"
-            >
-              {loading ? "ĐANG XỬ LÝ..." : "TẠO BÀI ĐĂNG"}
+            <button type="submit" disabled={loading || isExhausted}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+              {loading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Đang xử lý...</>
+              ) : (
+                <><FileText className="w-4 h-4" /> Đăng bài ngay</>
+              )}
             </button>
           </div>
         </form>
       </div>
+
+      <style dangerouslySetInnerHTML={{__html:`@keyframes fadeUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}} />
     </div>
   );
 };

@@ -14,8 +14,8 @@ import AddRoomForm from "./modals/AddRoomForm";
 import EditProfileModal from "./modals/EditProfileModal";
 import PurchasePlanModal from "./modals/PurchasePlanModal";
 import RoomDetailModal from "./modals/RoomDetailModal";
-// Uncomment the line below if you want to fall back to mock data
-// import { MOCK_ROOMS } from "./data/mockData";
+import PaymentResultModal from "./modals/PaymentResultModal";
+import { MOCK_ROOMS } from "./data/mockData";
 
 function MainApp() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,18 +28,30 @@ function MainApp() {
   const [showPricing, setShowPricing] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   
+  // Kiểm tra xem có phải là trang return từ VNPay không
+  const isPaymentReturn = new URLSearchParams(window.location.search).has("vnp_ResponseCode");
+
   const { user } = useUser();
+
+  const enforceAuth = (callback) => {
+    if (!user) {
+      setAuthMode("LOGIN");
+      setShowAuth(true);
+      return;
+    }
+    return callback();
+  };
   
   // Khởi tạo mảng rỗng thay vì dữ liệu ảo
   const [rooms, setRooms] = useState([]);
 
   // Tự động lấy danh sách bài đăng thật khi vừa mở trang
   useEffect(() => {
-    const fetchRealPosts = async () => {
+    const fetchRealPosts = async (retryWithoutToken = false) => {
       try {
         // Trang chủ có thể yêu cầu Token xác thực
         const token = localStorage.getItem("userToken");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = (token && !retryWithoutToken) ? { Authorization: `Bearer ${token}` } : {};
         // QUAN TRỌNG: Backend của bạn KHÔNG nhận page=0, bắt buộc page=1 trở lên (Lỗi 400 Bad Request)
         const res = await axios.get("/api/posts?page=1&size=20", { headers });
         const rawData = res.data?.content || res.data || [];
@@ -63,19 +75,23 @@ function MainApp() {
         }) : [];
         setRooms(fetchedRooms);
       } catch (err) {
-        setRooms([]);
-        console.error("Lỗi lấy bài đăng thật:", err);
-        alert("🛑 SERVER BÁO LỖI: " + JSON.stringify(err.response?.data || err.message, null, 2));
+        if (err.response?.status === 401 && !retryWithoutToken) {
+          // Nếu báo lỗi 401 do auth, thử lấy dữ liệu mà không cần token
+          fetchRealPosts(true);
+        } else {
+          setRooms(MOCK_ROOMS);
+          console.error("Lỗi lấy bài đăng thật, chuyển sang dùng dữ liệu ảo do chưa đăng nhập hoặc lỗi:", err);
+        }
       }
     };
     fetchRealPosts();
-  }, []);
+  }, [user]);
 
   const fetchNearbyRooms = async (lat, lng) => {
     try {
       const token = localStorage.getItem("userToken");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`/api/posts/nearby?lat=${lat}&lng=${lng}&radius=50&page=1&size=20`, { headers });
+      const res = await axios.get(`/api/posts/nearby?lat=${lat}&lng=${lng}&radius=2&page=1&size=20`, { headers });
       
       // Expand parsing to cover different result wrappers
       let rawData = [];
@@ -119,7 +135,7 @@ function MainApp() {
     }
   };
 
-  const handleGetLocation = () => {
+  const handleGetLocation = () => enforceAuth(() => {
     setIsLocating(true);
     if (!navigator.geolocation) {
       alert("Trình duyệt không hỗ trợ định vị GPS!");
@@ -154,9 +170,9 @@ function MainApp() {
         setIsLocating(false);
       }
     );
-  };
+  });
 
-  const handleSearch = async () => {
+  const handleSearch = async () => enforceAuth(() => {
     // Generate query parameters based on filters
     const queryParams = new URLSearchParams();
     queryParams.append("page", "1");
@@ -225,7 +241,7 @@ function MainApp() {
       }
     };
     fetchSearch();
-  };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -240,6 +256,7 @@ function MainApp() {
       {showEditProfile && <EditProfileModal onBack={() => setShowEditProfile(false)} />}
       {showPricing && <PurchasePlanModal onBack={() => setShowPricing(false)} />}
       {selectedRoomId && <RoomDetailModal roomId={selectedRoomId} onBack={() => setSelectedRoomId(null)} />}
+      {isPaymentReturn && <PaymentResultModal />}
 
       <Hero />
 
@@ -265,7 +282,7 @@ function MainApp() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {user?.role === "LANDLORD" && <AddRoomCard onClick={() => setShowAddRoom(true)} />}
           {rooms.map((room, index) => (
-            <RoomCard key={room.id} room={room} index={index} onClick={() => setSelectedRoomId(room.id)} />
+            <RoomCard key={room.id} room={room} index={index} onClick={() => enforceAuth(() => setSelectedRoomId(room.id))} />
           ))}
         </div>
       </main>

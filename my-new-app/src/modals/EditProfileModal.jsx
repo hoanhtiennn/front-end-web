@@ -1,143 +1,122 @@
 import { useState, useRef } from "react";
 import axios from "axios";
 import { useUser } from "../contexts/UserContext";
+import { X, Camera, User, Phone, Mail, Lock, Trash2, ShieldAlert, Save, RotateCcw, Eye, EyeOff } from "lucide-react";
+
+const PLAN_BADGE = {
+  FREE:  { label: "FREE",  color: "bg-gray-700 text-gray-300 border-gray-600" },
+  PRO:   { label: "PRO",   color: "bg-amber-500/20 text-amber-300 border-amber-500/40" },
+  ULTRA: { label: "ULTRA", color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" },
+};
+
+const InputField = ({ icon: Icon, label, note, ...props }) => (
+  <div className="space-y-1.5">
+    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+      {label}
+      {note && <span className="normal-case text-gray-600 font-normal">({note})</span>}
+    </label>
+    <div className="relative">
+      {Icon && (
+        <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+      )}
+      <input
+        className={`w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-3 pr-4 text-sm text-gray-200 placeholder-gray-600
+          focus:outline-none focus:border-cyan-500/60 focus:bg-gray-900 transition-all
+          disabled:opacity-40 disabled:cursor-not-allowed
+          ${Icon ? "pl-10" : "pl-4"}`}
+        {...props}
+      />
+    </div>
+  </div>
+);
 
 const EditProfileModal = ({ onBack }) => {
   const { user, updateUser, logout } = useUser();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
-  // Tải ảnh đại diện
+  const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const [previewAvatar, setPreviewAvatar] = useState(user.avatarUrl || "");
   const [avatarBlob, setAvatarBlob] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Xóa tài khoản
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // 1. XỬ LÝ CHỌN FILE VÀ NÉN THÀNH BASE64
+  const plan = PLAN_BADGE[user.plan] || PLAN_BADGE.FREE;
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
-      setError("Vui lòng chọn một file hình ảnh hợp lệ!");
+      setError("Vui lòng chọn file hình ảnh hợp lệ!");
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_DIMENSION = 200; // kích thước siêu nhỏ gọn nhẹ DB
-        
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_DIMENSION) {
-            height *= MAX_DIMENSION / width;
-            width = MAX_DIMENSION;
-          }
-        } else {
-          if (height > MAX_DIMENSION) {
-            width *= MAX_DIMENSION / height;
-            height = MAX_DIMENSION;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Tạo blob chuẩn File để gửi lên Backend
-        canvas.toBlob((blob) => {
-          setAvatarBlob(blob);
-        }, "image/jpeg", 0.6);
-
-        // Vẫn giữ Base64 để hiển thị chớp nhoáng trên giao diện web
-        const base64DataUrl = canvas.toDataURL("image/jpeg", 0.6);
-        setPreviewAvatar(base64DataUrl);
-        setError(""); // Clear error nếu có
+        const MAX = 200;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
+        else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => setAvatarBlob(blob), "image/jpeg", 0.7);
+        setPreviewAvatar(canvas.toDataURL("image/jpeg", 0.7));
+        setError("");
       };
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
 
-  // 2. LƯU THAY ĐỔI
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    const formData = new FormData(e.target);
-    const fullName = formData.get("fullName");
-    const phone = formData.get("phone");
-    const password = formData.get("password");
-
+    setSuccess(false);
+    const fd = new FormData(e.target);
     try {
-      if (!user.id) throw new Error("Chưa có ID người dùng, vui lòng đăng nhập lại!");
-
-      // Dùng FormData thay vì JSON chuẩn để Backend có thể đọc file
+      if (!user.id) throw new Error("Chưa có ID người dùng!");
       const apiFormData = new FormData();
-      apiFormData.append("fullName", fullName);
-      apiFormData.append("full_name", fullName); // Gửi cả 2 tên đề phòng backend dùng snake_case
-      apiFormData.append("phone", phone);
+      apiFormData.append("fullName", fd.get("fullName"));
+      apiFormData.append("full_name", fd.get("fullName"));
+      apiFormData.append("phone", fd.get("phone"));
       apiFormData.append("plan", user.plan || "FREE");
+      apiFormData.append("password", fd.get("password")?.trim() || "");
+      if (avatarBlob) apiFormData.append("avatar", avatarBlob, "avatar.jpg");
 
-      // Luôn gửi password (dù là rỗng) để Backend không bị lỗi NULL Pointer Exception khi gọi .strip()
-      apiFormData.append("password", password ? password.trim() : "");
-
-      if (avatarBlob) {
-        apiFormData.append("avatar", avatarBlob, "avatar.jpg");
-      }
-
-      const response = await axios.put(`/api/users/${user.id}`, apiFormData, {
-        headers: { 
-          Authorization: `Bearer ${user.token}`,
-          "Content-Type": "multipart/form-data"
-        }
+      const res = await axios.put(`/api/users/${user.id}`, apiFormData, {
+        headers: { Authorization: `Bearer ${user.token}`, "Content-Type": "multipart/form-data" }
       });
-      
-      const userData = response.data;
+      const d = res.data;
       updateUser({
-        name: userData.fullName || userData.full_name || fullName,
-        phone: userData.phone || phone,
-        avatarUrl: userData.avatar_url || userData.avatarUrl || previewAvatar
+        name: d.fullName || d.full_name || fd.get("fullName"),
+        phone: d.phone || fd.get("phone"),
+        avatarUrl: d.avatar_url || d.avatarUrl || previewAvatar,
       });
-      
-      onBack();
+      setSuccess(true);
+      setTimeout(() => onBack(), 1200);
     } catch (err) {
-      if (err.response?.data) {
-        // Ép in toàn bộ object lỗi của backend ra màn hình (hoặc chuỗi nếu backend trả chuỗi)
-        const errorData = typeof err.response.data === "object" ? JSON.stringify(err.response.data) : err.response.data;
-        setError("LỖI 400 BAD REQUEST: " + errorData);
-      } else {
-        setError(err.message || "Cập nhật thất bại.");
-      }
+      const msg = err.response?.data?.message || err.response?.data || err.message || "Cập nhật thất bại.";
+      setError(typeof msg === "object" ? JSON.stringify(msg) : msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // 3. XOÁ TÀI KHOẢN
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
-    setError("");
     try {
       await axios.delete(`/api/users/${user.id}`, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
-      // Thoát ra hoàn toàn
-      onBack();
-      logout();
-      window.location.reload(); // Reset lại toàn bộ ứng dụng sạch sẽ
+      onBack(); logout(); window.location.reload();
     } catch (err) {
-      setError(err.response?.data?.message || "Không thể xoá tài khoản lúc này!");
+      setError(err.response?.data?.message || "Không thể xoá tài khoản!");
       setDeleteLoading(false);
     }
   };
@@ -145,173 +124,189 @@ const EditProfileModal = ({ onBack }) => {
   if (!user) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 overflow-y-auto">
-      <div className="w-full max-w-md bg-white p-6 rounded shadow border border-gray-300 my-auto">
-        
-        {/* NẾU ĐANG XÁC NHẬN XOÁ */}
-        {showDeleteConfirm ? (
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
-                <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-black text-zinc-900 mb-2">Chắc chắn xoá?</h2>
-            <p className="text-sm text-zinc-500 font-medium mb-8">
-              Tất cả dữ liệu cá nhân bao gồm cả tin nhắn của bạn sẽ biến mất vĩnh viễn. Hành động này không thể hoàn tác!
-            </p>
-            
-            {error && <div className="text-xs text-red-600 font-bold bg-red-50 p-3 rounded-xl mb-4 text-center">{error}</div>}
-            
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => { setShowDeleteConfirm(false); setError(""); }}
-                disabled={deleteLoading}
-                className="w-full rounded bg-gray-200 py-2 font-bold text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-              >
-                HUỶ BỎ
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={deleteLoading}
-                className="w-full rounded bg-red-600 py-2 font-bold text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleteLoading ? "ĐANG XÓA..." : "VẪN XOÁ"}
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* FORM SỬA BÌNH THƯỜNG */
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-md bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-[fadeUp_0.3s_ease-out]">
+
+        {/* Subtle top glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none" />
+
+        {/* Header */}
+        <div className="relative flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Hồ sơ của bạn</h2>
-            <p className="text-sm text-gray-500 mb-6">Tuỳ chỉnh thông tin cá nhân trên hệ thống.</p>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              
-              {/* KHU VỰC AVATAR */}
-              <div className="flex items-center gap-4 py-2 border-b border-gray-200 pb-4">
-                <div className="w-16 h-16 border rounded bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center text-xl font-bold text-gray-500">
-                  {previewAvatar ? (
-                    <img src={previewAvatar} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="bg-gray-50 w-full h-full flex items-center justify-center">
-                      {user.name?.[0]?.toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-bold text-gray-700">Ảnh đại diện</span>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange} 
-                    className="hidden" 
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1 rounded border border-gray-300 bg-white text-sm hover:bg-gray-50"
-                    >
-                      Tải lên từ máy
-                    </button>
-                    {previewAvatar && previewAvatar !== user.avatarUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewAvatar(user.avatarUrl)}
-                        className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-sm hover:bg-gray-300"
-                      >
-                        Khôi phục
-                      </button>
+            <h2 className="text-xl font-bold text-white">Hồ sơ cá nhân</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Cập nhật thông tin tài khoản của bạn</p>
+          </div>
+          <button
+            onClick={onBack}
+            className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="relative px-6 py-5 overflow-y-auto max-h-[80vh]">
+
+          {/* DELETE CONFIRM */}
+          {showDeleteConfirm ? (
+            <div className="text-center py-4 animate-[fadeUp_0.2s_ease-out]">
+              <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="w-8 h-8 text-rose-400" />
+              </div>
+              <h3 className="text-xl font-black text-white mb-2">Xác nhận xoá?</h3>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                Toàn bộ dữ liệu cá nhân, tin đăng và lịch sử của bạn sẽ bị xoá <span className="text-rose-400 font-semibold">vĩnh viễn</span> và không thể khôi phục.
+              </p>
+              {error && (
+                <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl mb-4">{error}</div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteConfirm(false); setError(""); }}
+                  disabled={deleteLoading}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:bg-gray-800 transition-all disabled:opacity-50"
+                >
+                  Huỷ bỏ
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all disabled:opacity-50"
+                >
+                  {deleteLoading ? "Đang xoá..." : "Xoá tài khoản"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* AVATAR */}
+              <div className="flex items-center gap-4 p-4 bg-gray-900/50 rounded-xl border border-gray-800">
+                <div className="relative shrink-0">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
+                    {previewAvatar ? (
+                      <img src={previewAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-bold text-gray-400">
+                        {user.name?.[0]?.toUpperCase() || "?"}
+                      </span>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-cyan-500 hover:bg-cyan-400 rounded-full flex items-center justify-center shadow-lg transition-all"
+                  >
+                    <Camera className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{user.name || "Chưa đặt tên"}</p>
+                  <p className="text-xs text-gray-500 truncate mb-2">{user.email}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${plan.color}`}>
+                      {plan.label}
+                    </span>
+                    <span className="text-[10px] text-gray-600">{user.role || "TENANT"}</span>
+                  </div>
+                </div>
+                {previewAvatar && previewAvatar !== user.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setPreviewAvatar(user.avatarUrl || ""); setAvatarBlob(null); }}
+                    className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-all"
+                    title="Hoàn tác"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* FIELDS */}
+              <InputField icon={Mail} label="Email" note="chỉ đọc"
+                disabled value={user.email || ""} />
+
+              <InputField icon={User} label="Họ và tên"
+                name="fullName" required
+                defaultValue={user.name || ""}
+                placeholder="Nhập họ và tên hiển thị" />
+
+              <InputField icon={Phone} label="Số điện thoại"
+                name="phone" type="tel"
+                defaultValue={user.phone || ""}
+                placeholder="Ví dụ: 0901234567" />
+
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Mật khẩu mới <span className="normal-case text-gray-600 font-normal">(tuỳ chọn)</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Bỏ trống nếu không muốn đổi"
+                    className="w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-3 pl-10 pr-11 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-500/60 focus:bg-gray-900 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
-              {/* INPUT FIELDS */}
-              <div>
-                <label className="text-sm font-bold text-gray-700 block mb-1">Email <span className="font-normal text-xs text-gray-500">(Chỉ đọc)</span></label>
-                <input 
-                  disabled 
-                  value={user.email || ""} 
-                  className="w-full rounded border border-gray-300 bg-gray-100 p-2 text-gray-500" 
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-gray-700 block mb-1">Họ và tên</label>
-                <input 
-                  name="fullName"
-                  defaultValue={user.name || ""} 
-                  required
-                  placeholder="Họ và tên hiển thị"
-                  className="w-full rounded border border-gray-300 p-2 text-gray-900" 
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-gray-700 block mb-1">Số điện thoại</label>
-                <input 
-                  name="phone"
-                  type="tel"
-                  defaultValue={user.phone || ""} 
-                  placeholder="Nhập đủ 10 số, ví dụ 0123456789"
-                  className="w-full rounded border border-gray-300 p-2 text-gray-900" 
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-gray-700 block mb-1">Mật khẩu mới (Tuỳ chọn)</label>
-                <input 
-                  name="password"
-                  type="password"
-                  placeholder="Bỏ trống nếu không muốn đổi pass"
-                  className="w-full rounded border border-gray-300 p-2 text-gray-900" 
-                />
-              </div>
-
+              {/* MESSAGES */}
               {error && (
-                <div className="text-sm text-red-600 bg-red-100 p-3 rounded border border-red-200">
-                  {error}
+                <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                  ⚠️ {error}
+                </div>
+              )}
+              {success && (
+                <div className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl text-center font-semibold">
+                  ✅ Cập nhật thành công!
                 </div>
               )}
 
-              <div className="pt-4 flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={onBack}
-                    disabled={loading}
-                    className="w-1/3 rounded border border-gray-300 bg-white py-2 font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    HỦY
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-2/3 rounded bg-blue-600 py-2 font-bold text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {loading ? "ĐANG LƯU..." : "LƯU THAY ĐỔI"}
-                  </button>
-                </div>
-                
-                {/* NÚT XOÁ TÀI KHOẢN MÀU ĐỎ */}
+              {/* ACTIONS */}
+              <div className="flex gap-3 pt-1">
                 <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-full rounded border border-red-500 bg-white py-2 font-bold text-red-600 hover:bg-red-50 mt-4"
+                  type="button" onClick={onBack} disabled={loading}
+                  className="w-1/3 py-2.5 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 hover:text-white transition-all disabled:opacity-50"
                 >
-                  XOÁ TÀI KHOẢN VĨNH VIỄN
+                  Huỷ
+                </button>
+                <button
+                  type="submit" disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:shadow-[0_0_25px_rgba(6,182,212,0.45)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {loading ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
               </div>
-            </form>
-          </div>
-        )}
 
+              {/* DELETE */}
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full py-2.5 rounded-xl border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 font-semibold text-sm transition-all flex items-center justify-center gap-2 mt-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Xoá tài khoản vĩnh viễn
+              </button>
+            </form>
+          )}
+        </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(16px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+      `}} />
     </div>
   );
 };

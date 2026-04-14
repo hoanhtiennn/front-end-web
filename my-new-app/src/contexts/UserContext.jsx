@@ -22,6 +22,8 @@ export const UserProvider = ({ children }) => {
           role: u.role, 
           plan: u.plan,
           avatarUrl: u.avatar_url || u.avatarUrl,
+          // Lượt đăng bài còn lại
+          remainingPosts: u.remainingPosts ?? u.remaining_posts ?? null,
           token 
         });
       })
