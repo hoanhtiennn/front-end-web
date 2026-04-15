@@ -1,0 +1,273 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useUser } from "../contexts/UserContext";
+import {
+  X, Pencil, Trash2, ToggleLeft, ToggleRight,
+  Loader2, AlertCircle, Home, RefreshCw
+} from "lucide-react";
+
+const MyPostsModal = ({ onBack, onEditPost }) => {
+  const { user } = useUser();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  useEffect(() => { fetchMyPosts(); }, []);
+
+  const fetchMyPosts = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const token = localStorage.getItem("userToken");
+      const res = await axios.get(`/api/posts/my-posts?page=1&size=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const raw = res.data?.content || res.data || [];
+      setPosts(Array.isArray(raw) ? raw : []);
+    } catch {
+      setError("Không thể tải danh sách bài đăng. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (post) => {
+    const newStatus = post.status === "ACTIVE" ? "CLOSED" : "ACTIVE";
+    try {
+      setTogglingId(post.id);
+      const token = localStorage.getItem("userToken");
+      await axios.patch(`/api/posts/${post.id}/status?status=${newStatus}`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPosts((prev) =>
+        prev.map((p) => (p.id === post.id ? { ...p, status: newStatus } : p))
+      );
+    } catch {
+      alert("Lỗi khi đổi trạng thái. Vui lòng thử lại!");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      setDeletingId(id);
+      const token = localStorage.getItem("userToken");
+      await axios.delete(`/api/posts/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+      setConfirmDeleteId(null);
+    } catch {
+      alert("Lỗi khi xóa bài đăng. Vui lòng thử lại!");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const getImageUrl = (post) =>
+    post.images?.[0]?.url ||
+    post.images?.[0]?.imageUrl ||
+    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-3xl bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-[fadeUp_0.3s_ease-out]">
+
+        {/* Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 bg-rose-500/8 rounded-full blur-[60px] pointer-events-none" />
+
+        {/* HEADER */}
+        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+              <Home className="w-4 h-4 text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white leading-tight">Bài đăng của tôi</h2>
+              <p className="text-xs text-gray-500">
+                {loading ? "Đang tải..." : `${posts.length} bài đăng`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchMyPosts}
+              disabled={loading}
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-40"
+              title="Làm mới"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              onClick={onBack}
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* STATUS LEGEND */}
+        <div className="px-6 pt-4 pb-2 flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-xs text-gray-400">Còn trống</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-400" />
+            <span className="text-xs text-gray-400">Đã cho thuê</span>
+          </div>
+          <span className="text-xs text-gray-600 ml-auto">Nhấn icon để đổi trạng thái</span>
+        </div>
+
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-3">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Loader2 className="w-8 h-8 text-rose-400 animate-spin" />
+              <p className="text-sm text-gray-500">Đang tải bài đăng...</p>
+            </div>
+          ) : error ? (
+            <div className="text-rose-400 bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="text-sm">{error}</span>
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-16 text-gray-500">
+              <Home className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p className="font-semibold text-gray-400 mb-1">Bạn chưa có bài đăng nào</p>
+              <p className="text-sm">Hãy đăng tin để tiếp cận khách thuê</p>
+              <button
+                onClick={onBack}
+                className="mt-4 text-sm text-rose-400 hover:text-rose-300 font-semibold transition-colors"
+              >
+                Đăng bài ngay →
+              </button>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <div
+                key={post.id}
+                className="flex gap-4 bg-gray-900/60 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all group"
+              >
+                {/* Thumbnail */}
+                <div className="shrink-0 relative">
+                  <img
+                    src={getImageUrl(post)}
+                    alt={post.title}
+                    className="w-24 h-20 object-cover rounded-lg border border-gray-700"
+                  />
+                  {/* Status dot on image */}
+                  <span className={`absolute top-1.5 left-1.5 w-2.5 h-2.5 rounded-full border-2 border-gray-900 ${
+                    post.status === "CLOSED" ? "bg-rose-400" : "bg-emerald-400"
+                  }`} />
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                  <div>
+                    <h3 className="text-sm font-bold text-white line-clamp-1 mb-0.5">{post.title}</h3>
+                    <p className="text-xs text-gray-500 truncate">{post.address}</p>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-sm font-bold text-rose-400">
+                      {((post.price || 0) / 1_000_000).toFixed(1)}tr/tháng
+                    </span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wider ${
+                      post.status === "CLOSED"
+                        ? "bg-rose-500/15 border-rose-500/30 text-rose-400"
+                        : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                    }`}>
+                      {post.status === "CLOSED" ? "Đã cho thuê" : "Còn trống"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Toggle Status */}
+                  <button
+                    onClick={() => handleToggleStatus(post)}
+                    disabled={togglingId === post.id}
+                    title={post.status === "CLOSED" ? "Đánh dấu còn trống" : "Đánh dấu đã cho thuê"}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all disabled:opacity-50 active:scale-95 ${
+                      post.status === "CLOSED"
+                        ? "border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                        : "border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
+                    }`}
+                  >
+                    {togglingId === post.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : post.status === "CLOSED" ? (
+                      <ToggleLeft className="w-4 h-4" />
+                    ) : (
+                      <ToggleRight className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  {/* Edit */}
+                  <button
+                    onClick={() => onEditPost(post)}
+                    title="Sửa bài đăng"
+                    className="p-2.5 rounded-xl border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 transition-all active:scale-95"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => setConfirmDeleteId(post.id)}
+                    title="Xóa bài đăng"
+                    className="p-2.5 rounded-xl border border-gray-700 text-gray-500 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10 transition-all active:scale-95"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* CONFIRM DELETE OVERLAY */}
+        {confirmDeleteId && (
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-2xl flex items-center justify-center p-6 z-10">
+            <div className="bg-[#0D1117] border border-gray-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-[fadeUp_0.2s_ease-out]">
+              <div className="w-14 h-14 mx-auto mb-4 bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Xóa bài đăng?</h3>
+              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                Hành động này <strong className="text-red-400">không thể hoàn tác</strong>. Bài đăng và toàn bộ hình ảnh sẽ bị xóa vĩnh viễn.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  disabled={deletingId === confirmDeleteId}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 transition-all disabled:opacity-50"
+                >
+                  Huỷ
+                </button>
+                <button
+                  onClick={() => handleDelete(confirmDeleteId)}
+                  disabled={deletingId === confirmDeleteId}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {deletingId === confirmDeleteId && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Xác nhận xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes fadeUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}` }} />
+      </div>
+    </div>
+  );
+};
+
+export default MyPostsModal;

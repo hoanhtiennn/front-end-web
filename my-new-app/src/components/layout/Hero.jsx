@@ -9,7 +9,7 @@ const Hero = () => (
     ></div>
     
     {/* Gradient Overlay for Readability */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60"></div>
+    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-black/60"></div>
 
     <div className="relative h-full container mx-auto px-6 py-20 flex flex-col justify-center items-center text-center z-10 mt-[-20px]">
       

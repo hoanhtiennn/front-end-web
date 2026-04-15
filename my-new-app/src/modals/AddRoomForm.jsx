@@ -50,22 +50,36 @@ const inputCls = "w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-
 
 const PLAN_LIMITS = { FREE: 3, PRO: 33, ULTRA: 103 };
 
-const AddRoomForm = ({ onBack }) => {
+const AddRoomForm = ({ onBack, existingPost }) => {
+  const isEditMode = !!existingPost;
   const { user, updateUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [images, setImages] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  // Nếu edit mode: hiển thị ảnh cũ làm preview
+  const [imagePreviews, setImagePreviews] = useState(
+    existingPost?.images?.map(img => img.url || img.imageUrl).filter(Boolean) || []
+  );
+  // Nếu edit mode: pre-fill tiện ích cũ
+  const [selectedAmenities, setSelectedAmenities] = useState(
+    existingPost?.amenities?.map(a => a.type || a.name || a).filter(Boolean) || []
+  );
   const [formData, setFormData] = useState({
-    title: "", description: "", address: "", ward: "",
-    district: "", city: "", price: "", area: "", roomType: "PHONG_TRO_GAC",
+    title:       existingPost?.title || "",
+    description: existingPost?.description || "",
+    address:     existingPost?.address || "",
+    ward:        existingPost?.ward || existingPost?.location?.ward || "",
+    district:    existingPost?.district || existingPost?.location?.district || "",
+    city:        existingPost?.city || existingPost?.location?.city || "",
+    price:       existingPost?.price?.toString() || "",
+    area:        existingPost?.area?.toString() || "",
+    roomType:    existingPost?.roomType || "PHONG_TRO_GAC",
   });
 
-  // Số bài còn có thể đăng (lấy trực tiếp từ backend)
+  // Số bài còn có thể đăng (chỉ kiểm tra khi tạo mới)
   const remaining   = user?.remainingPosts ?? 0;
-  const isExhausted = remaining <= 0;
+  const isExhausted = !isEditMode && remaining <= 0;
 
   const toggleAmenity = (label) =>
     setSelectedAmenities(prev =>
@@ -101,7 +115,8 @@ const AddRoomForm = ({ onBack }) => {
       qp.append("district", formData.district);
       qp.append("city", formData.city);
 
-      let lat = "10.762622", lng = "106.660172";
+      let lat = String(existingPost?.latitude ?? "10.762622");
+      let lng = String(existingPost?.longitude ?? "106.660172");
       try {
         const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
         if (GOONG_KEY?.trim()) {
@@ -116,7 +131,7 @@ const AddRoomForm = ({ onBack }) => {
           });
           if (nr.data?.length > 0) { lat = nr.data[0].lat; lng = nr.data[0].lon; }
         }
-      } catch (_) { /* dùng default */ }
+      } catch (_) { /* dùng default / toạ độ cũ */ }
 
       qp.append("latitude", lat);
       qp.append("longitude", lng);
@@ -128,12 +143,20 @@ const AddRoomForm = ({ onBack }) => {
       const data = new FormData();
       images.forEach(f => data.append("images", f));
 
-      await axios.post(`/api/posts?${qp.toString()}`, data, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
-      });
+      if (isEditMode) {
+        // PUT /api/posts/{id} — Sửa bài đăng
+        await axios.put(`/api/posts/${existingPost.id}?${qp.toString()}`, data, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+        });
+      } else {
+        // POST /api/posts — Tạo bài đăng mới
+        await axios.post(`/api/posts?${qp.toString()}`, data, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+        });
+        // Giảm số lượt trong context (chỉ khi tạo mới)
+        updateUser({ remainingPosts: remaining - 1 });
+      }
 
-      // Giảm số lượt trong context tạm thời (sẽ được sync lại khi load trang)
-      updateUser({ remainingPosts: remaining - 1 });
       setSuccess(true);
       setTimeout(() => onBack(), 2000);
     } catch (err) {
@@ -153,8 +176,8 @@ const AddRoomForm = ({ onBack }) => {
             <CheckCircle2 className="w-10 h-10 text-emerald-400" />
           </div>
         </div>
-        <h2 className="text-2xl font-black text-white mb-2">Đăng tin thành công!</h2>
-        <p className="text-gray-400 text-sm">Tin đăng của bạn đã được ghi nhận và đang chờ duyệt.</p>
+        <h2 className="text-2xl font-black text-white mb-2">{isEditMode ? "Cập nhật thành công!" : "Đăng tin thành công!"}</h2>
+        <p className="text-gray-400 text-sm">{isEditMode ? "Bài đăng của bạn đã được cập nhật." : "Tin đăng của bạn đã được ghi nhận và đang chờ duyệt."}</p>
         <p className="text-xs text-gray-600 mt-3">Tự động đóng...</p>
       </div>
       <style dangerouslySetInnerHTML={{__html:`@keyframes fadeUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}} />
@@ -175,8 +198,8 @@ const AddRoomForm = ({ onBack }) => {
               <FileText className="w-4 h-4 text-cyan-400" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white leading-tight">Đăng tin phòng mới</h2>
-              <p className="text-xs text-gray-500">Điền đầy đủ thông tin để tiếp cận sinh viên</p>
+              <h2 className="text-lg font-bold text-white leading-tight">{isEditMode ? "Sửa bài đăng" : "Đăng tin phòng mới"}</h2>
+              <p className="text-xs text-gray-500">{isEditMode ? "Cập nhật thông tin bài đăng của bạn" : "Điền đầy đủ thông tin để tiếp cận sinh viên"}</p>
             </div>
           </div>
           <button onClick={onBack} className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all">
@@ -184,37 +207,36 @@ const AddRoomForm = ({ onBack }) => {
           </button>
         </div>
 
-        {/* POST QUOTA BANNER */}
-        <div className={`mx-6 mt-4 rounded-xl px-4 py-3 flex items-center gap-3 border shrink-0 ${
-          isExhausted
-            ? "bg-rose-500/10 border-rose-500/30"
-            : remaining <= 3
-            ? "bg-amber-500/10 border-amber-500/30"
-            : "bg-gray-900/50 border-gray-800"
-        }`}>
-          <Info className={`w-4 h-4 shrink-0 ${isExhausted ? "text-rose-400" : remaining <= 3 ? "text-amber-400" : "text-gray-500"}`} />
-          <div className="flex-1 text-sm">
-            {isExhausted ? (
-              <span className="text-rose-400 font-semibold">Bạn đã hết lượt đăng bài! Nâng cấp gói để tiếp tục.</span>
-            ) : (
-              <span className={remaining <= 3 ? "text-amber-300" : "text-gray-400"}>
-                Lượt đăng còn lại:{" "}
-                <strong className={remaining <= 3 ? "text-amber-300" : "text-white"}>
-                  {remaining}
-                </strong>
-              </span>
-            )}
+        {/* POST QUOTA BANNER — ẩn ở edit mode */}
+        {!isEditMode && (
+          <div className={`mx-6 mt-4 rounded-xl px-4 py-3 flex items-center gap-3 border shrink-0 ${
+            isExhausted
+              ? "bg-rose-500/10 border-rose-500/30"
+              : remaining <= 3
+              ? "bg-amber-500/10 border-amber-500/30"
+              : "bg-gray-900/50 border-gray-800"
+          }`}>
+            <Info className={`w-4 h-4 shrink-0 ${isExhausted ? "text-rose-400" : remaining <= 3 ? "text-amber-400" : "text-gray-500"}`} />
+            <div className="flex-1 text-sm">
+              {isExhausted ? (
+                <span className="text-rose-400 font-semibold">Bạn đã hết lượt đăng bài! Nâng cấp gói để tiếp tục.</span>
+              ) : (
+                <span className={remaining <= 3 ? "text-amber-300" : "text-gray-400"}>
+                  Lượt đăng còn lại:{" "}
+                  <strong className={remaining <= 3 ? "text-amber-300" : "text-white"}>{remaining}</strong>
+                </span>
+              )}
+            </div>
+            <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden shrink-0">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  isExhausted ? "bg-rose-500" : remaining <= 3 ? "bg-amber-400" : "bg-cyan-500"
+                }`}
+                style={{ width: remaining > 0 ? "50%" : "0%" }}
+              />
+            </div>
           </div>
-          {/* Progress bar — ẩn nếu không biết tổng */}
-          <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden shrink-0">
-            <div
-              className={`h-full rounded-full transition-all ${
-                isExhausted ? "bg-rose-500" : remaining <= 3 ? "bg-amber-400" : "bg-cyan-500"
-              }`}
-              style={{ width: remaining > 0 ? "50%" : "0%" }}
-            />
-          </div>
-        </div>
+        )}
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -368,6 +390,8 @@ const AddRoomForm = ({ onBack }) => {
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all disabled:opacity-40 flex items-center justify-center gap-2">
               {loading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Đang xử lý...</>
+              ) : isEditMode ? (
+                <><FileText className="w-4 h-4" /> Lưu thay đổi</>
               ) : (
                 <><FileText className="w-4 h-4" /> Đăng bài ngay</>
               )}

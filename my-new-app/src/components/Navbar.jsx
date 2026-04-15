@@ -1,6 +1,6 @@
 import { useUser } from "../contexts/UserContext";
 
-const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick }) => {
+const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick }) => {
   const { user, logout } = useUser();
   return (
     <nav className="bg-white/95 backdrop-blur-3xl sticky top-0 z-50 px-4 md:px-8 py-3 shadow-sm border-b border-rose-500/10">
@@ -52,12 +52,20 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick }) => {
               {/* Action Buttons */}
               <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 md:pl-5">
                 {user.role === "LANDLORD" && (
-                  <button
-                    onClick={onPricingClick}
-                    className="bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold px-4 py-2 rounded-full text-[13px] hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 transition-all duration-300 mr-1"
-                  >
-                    Mua Lượt
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={onMyPostsClick}
+                      className="text-gray-600 text-[13px] font-bold hover:text-rose-500 transition-colors hover:bg-rose-50 px-3 py-2 rounded-full"
+                    >
+                      Bài đăng
+                    </button>
+                    <button
+                      onClick={onPricingClick}
+                      className="bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold px-4 py-2 rounded-full text-[13px] hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 transition-all duration-300 mr-1"
+                    >
+                      Mua Lượt
+                    </button>
+                  </div>
                 )}
                 <button
                   onClick={onEditProfileClick}

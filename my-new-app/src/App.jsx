@@ -15,6 +15,7 @@ import EditProfileModal from "./modals/EditProfileModal";
 import PurchasePlanModal from "./modals/PurchasePlanModal";
 import RoomDetailModal from "./modals/RoomDetailModal";
 import PaymentResultModal from "./modals/PaymentResultModal";
+import MyPostsModal from "./modals/MyPostsModal";
 import { MOCK_ROOMS } from "./data/mockData";
 
 function MainApp() {
@@ -27,6 +28,8 @@ function MainApp() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [showMyPosts, setShowMyPosts] = useState(false);
+  const [editingPost, setEditingPost] = useState(null); // post obj khi edit
   
   // Kiểm tra xem có phải là trang return từ VNPay không
   const isPaymentReturn = new URLSearchParams(window.location.search).has("vnp_ResponseCode");
@@ -249,10 +252,29 @@ function MainApp() {
         onAuthClick={(mode) => { setAuthMode(mode); setShowAuth(true); }} 
         onEditProfileClick={() => setShowEditProfile(true)}
         onPricingClick={() => setShowPricing(true)}
+        onMyPostsClick={() => setShowMyPosts(true)}
       />
 
       {showAuth && <AuthPage mode={authMode} onBack={() => setShowAuth(false)} />}
       {showAddRoom && <AddRoomForm onBack={() => setShowAddRoom(false)} />}
+      {editingPost && (
+        <AddRoomForm
+          existingPost={editingPost}
+          onBack={() => {
+            setEditingPost(null);
+            setShowMyPosts(true); // Quay lại danh sách sau khi sửa
+          }}
+        />
+      )}
+      {showMyPosts && !editingPost && (
+        <MyPostsModal
+          onBack={() => setShowMyPosts(false)}
+          onEditPost={(post) => {
+            setShowMyPosts(false);
+            setEditingPost(post);
+          }}
+        />
+      )}
       {showEditProfile && <EditProfileModal onBack={() => setShowEditProfile(false)} />}
       {showPricing && <PurchasePlanModal onBack={() => setShowPricing(false)} />}
       {selectedRoomId && <RoomDetailModal roomId={selectedRoomId} onBack={() => setSelectedRoomId(null)} />}
