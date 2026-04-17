@@ -3,10 +3,10 @@ import axios from "axios";
 import { useUser } from "../contexts/UserContext";
 import {
   X, Pencil, Trash2, ToggleLeft, ToggleRight,
-  Loader2, AlertCircle, Home, RefreshCw
+  Loader2, AlertCircle, Home, RefreshCw, Eye, Heart
 } from "lucide-react";
 
-const MyPostsModal = ({ onBack, onEditPost }) => {
+const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
   const { user } = useUser();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +14,7 @@ const MyPostsModal = ({ onBack, onEditPost }) => {
   const [deletingId, setDeletingId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [saveCounts, setSaveCounts] = useState({}); // { postId: count }
 
   useEffect(() => { fetchMyPosts(); }, []);
 
@@ -26,12 +27,32 @@ const MyPostsModal = ({ onBack, onEditPost }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const raw = res.data?.content || res.data || [];
-      setPosts(Array.isArray(raw) ? raw : []);
+      const list = Array.isArray(raw) ? raw : [];
+      setPosts(list);
+      // Sau khi có danh sách, fetch số lượt thích từng bài
+      fetchSaveCounts(list, token);
     } catch {
       setError("Không thể tải danh sách bài đăng. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Gọi API đếm lượt thích từng bài — sản sàng khi backend có endpoint
+  const fetchSaveCounts = async (list, token) => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const counts = {};
+    await Promise.allSettled(
+      list.map(async (post) => {
+        try {
+          const res = await axios.get(`/api/saved-posts/count/${post.id}`, { headers });
+          counts[post.id] = typeof res.data === "number" ? res.data : (res.data?.count ?? null);
+        } catch {
+          counts[post.id] = null; // endpoint chưa có → hiện "--"
+        }
+      })
+    );
+    setSaveCounts(counts);
   };
 
   const handleToggleStatus = async (post) => {
@@ -154,23 +175,36 @@ const MyPostsModal = ({ onBack, onEditPost }) => {
                 key={post.id}
                 className="flex gap-4 bg-gray-900/60 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all group"
               >
-                {/* Thumbnail */}
-                <div className="shrink-0 relative">
+                {/* Thumbnail — click để xem chi tiết */}
+                <div
+                  className="shrink-0 relative cursor-pointer group/thumb"
+                  onClick={() => onViewPost && onViewPost(post.id)}
+                  title="Xem chi tiết bài đăng"
+                >
                   <img
                     src={getImageUrl(post)}
                     alt={post.title}
-                    className="w-24 h-20 object-cover rounded-lg border border-gray-700"
+                    className="w-24 h-20 object-cover rounded-lg border border-gray-700 group-hover/thumb:opacity-80 transition-opacity"
                   />
-                  {/* Status dot on image */}
+                  {/* Status dot */}
                   <span className={`absolute top-1.5 left-1.5 w-2.5 h-2.5 rounded-full border-2 border-gray-900 ${
                     post.status === "CLOSED" ? "bg-rose-400" : "bg-emerald-400"
                   }`} />
+                  {/* Eye overlay */}
+                  <div className="absolute inset-0 rounded-lg flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 bg-black/40 transition-opacity">
+                    <Eye className="w-5 h-5 text-white" />
+                  </div>
                 </div>
 
-                {/* Info */}
+                {/* Info — click tiêu đề cũng mở detail */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                   <div>
-                    <h3 className="text-sm font-bold text-white line-clamp-1 mb-0.5">{post.title}</h3>
+                    <h3
+                      className="text-sm font-bold text-white line-clamp-1 mb-0.5 hover:text-rose-300 cursor-pointer transition-colors"
+                      onClick={() => onViewPost && onViewPost(post.id)}
+                    >
+                      {post.title}
+                    </h3>
                     <p className="text-xs text-gray-500 truncate">{post.address}</p>
                   </div>
                   <div className="flex items-center gap-3 mt-2">
@@ -183,6 +217,13 @@ const MyPostsModal = ({ onBack, onEditPost }) => {
                         : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
                     }`}>
                       {post.status === "CLOSED" ? "Đã cho thuê" : "Còn trống"}
+                    </span>
+                    {/* Lượt lưu bài */}
+                    <span className="flex items-center gap-1 text-[11px] text-rose-300 font-semibold ml-auto">
+                      <Heart className="w-3 h-3 fill-rose-300" />
+                      {saveCounts[post.id] !== undefined
+                        ? (saveCounts[post.id] !== null ? saveCounts[post.id] : "--")
+                        : <Loader2 className="w-3 h-3 animate-spin" />}
                     </span>
                   </div>
                 </div>

@@ -65,13 +65,36 @@ const AddRoomForm = ({ onBack, existingPost }) => {
   const [selectedAmenities, setSelectedAmenities] = useState(
     existingPost?.amenities?.map(a => a.type || a.name || a).filter(Boolean) || []
   );
+  // Khi edit: backend trả về address là chuỗi đầy đủ (VD: "123 Lê Lợi, Phường 1, Q.1, TP.HCM")
+  // Cần tách ra phần địa chỉ thuần tuý (số nhà + đường) để tránh bị cộng dồn khi submit
+  const parseStreetAddress = (fullAddr, ward, district, city) => {
+    if (!fullAddr) return "";
+    let street = fullAddr;
+    // Xoá lần lượt các phần ward, district, city khỏi cuối chuỗi
+    [city, district, ward].forEach(part => {
+      if (part && street.endsWith(", " + part)) {
+        street = street.slice(0, -(part.length + 2));
+      } else if (part && street.endsWith("," + part)) {
+        street = street.slice(0, -(part.length + 1));
+      }
+    });
+    return street.trim();
+  };
+
+  const _ward     = existingPost?.ward     || existingPost?.location?.ward     || "";
+  const _district = existingPost?.district || existingPost?.location?.district || "";
+  const _city     = existingPost?.city     || existingPost?.location?.city     || "";
+
   const [formData, setFormData] = useState({
     title:       existingPost?.title || "",
     description: existingPost?.description || "",
-    address:     existingPost?.address || "",
-    ward:        existingPost?.ward || existingPost?.location?.ward || "",
-    district:    existingPost?.district || existingPost?.location?.district || "",
-    city:        existingPost?.city || existingPost?.location?.city || "",
+    // Nếu có ward/district/city riêng thì tách phần street ra khỏi address tổng hợp
+    address:     (_ward || _district || _city)
+                   ? parseStreetAddress(existingPost?.address || "", _ward, _district, _city)
+                   : (existingPost?.address || ""),
+    ward:        _ward,
+    district:    _district,
+    city:        _city,
     price:       existingPost?.price?.toString() || "",
     area:        existingPost?.area?.toString() || "",
     roomType:    existingPost?.roomType || "PHONG_TRO_GAC",

@@ -1,6 +1,7 @@
 import { useUser } from "../contexts/UserContext";
+import { Heart } from "lucide-react";
 
-const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick }) => {
+const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick }) => {
   const { user, logout } = useUser();
   return (
     <nav className="bg-white/95 backdrop-blur-3xl sticky top-0 z-50 px-4 md:px-8 py-3 shadow-sm border-b border-rose-500/10">
@@ -66,6 +67,17 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                       Mua Lượt
                     </button>
                   </div>
+                )}
+                {/* Saved Posts button — chỉ hiện cho người thuê (không phải LANDLORD) */}
+                {user.role !== "LANDLORD" && (
+                  <button
+                    onClick={onSavedPostsClick}
+                    title="Bài đã thích"
+                    className="flex items-center gap-1.5 text-gray-600 text-[13px] font-bold hover:text-rose-500 transition-colors hover:bg-rose-50 px-3 py-2 rounded-full"
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="hidden sm:inline">Đã Thích</span>
+                  </button>
                 )}
                 <button
                   onClick={onEditProfileClick}

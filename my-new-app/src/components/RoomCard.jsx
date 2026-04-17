@@ -1,5 +1,35 @@
+import { useState, useEffect } from "react";
+import { Heart } from "lucide-react";
+import axios from "axios";
+import { useUser } from "../contexts/UserContext";
+import { toggleSavePost, isPostSaved } from "../modals/SavedPostsModal";
+
 const RoomCard = ({ room, index, onClick }) => {
   const isTallCard = index % 3 === 0;
+  const { user } = useUser();
+  const userId = user?.id ?? null;
+
+  // ── Like state ──
+  const [isSaved, setIsSaved] = useState(false);
+  const [likeAnim, setLikeAnim] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(isPostSaved(room.id, userId));
+  }, [room.id, userId]);
+
+  const handleToggleSave = async (e) => {
+    e.stopPropagation(); // Không mở modal chi tiết
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+      alert("Vui lòng đăng nhập để lưu bài yêu thích!");
+      return;
+    }
+    setLikeAnim(true);
+    setTimeout(() => setLikeAnim(false), 600);
+    const next = await toggleSavePost(room.id, isSaved, userId);
+    setIsSaved(next);
+  };
+
   return (
     <div
       onClick={() => onClick && onClick(room.id)}
@@ -14,7 +44,10 @@ const RoomCard = ({ room, index, onClick }) => {
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-black/30 opacity-60 group-hover:opacity-40 transition-opacity duration-500"></div>
+        
+        {/* Top row: badge + price */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start gap-2 z-10">
+          {/* Plan badge */}
           {room.planType === 'ULTRA' ? (
             <span className="bg-gradient-to-r from-cyan-400 to-blue-600 px-3 py-1 text-[11px] font-black text-white rounded-full uppercase tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.6)] border border-cyan-300">
               💎 ULTRA
@@ -28,14 +61,35 @@ const RoomCard = ({ room, index, onClick }) => {
               {room.tag || "Mới"}
             </span>
           )}
-          <div className="flex flex-col items-end text-white glass-effect bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 shadow-lg">
+
+          {/* Price */}
+          <div className="flex flex-col items-end text-white bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 shadow-lg">
             <span className="text-xl font-black tracking-tight">{room.price}</span>
             <span className="text-[10px] uppercase font-semibold text-gray-200">
               triệu/tháng
             </span>
           </div>
         </div>
+
+        {/* Heart button */}
+        <div className="absolute bottom-4 right-4 z-10">
+          <button
+            onClick={handleToggleSave}
+            className={`w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md border transition-all duration-300 shadow-lg
+              ${isSaved
+                ? "bg-rose-500 border-rose-400 shadow-rose-500/50"
+                : "bg-black/30 border-white/20 hover:bg-rose-500/80 hover:border-rose-300"
+              }
+              ${likeAnim ? "scale-125" : "scale-100"}
+            `}
+          >
+            <Heart
+              className={`w-4 h-4 transition-all ${isSaved ? "fill-white text-white" : "text-white"}`}
+            />
+          </button>
+        </div>
       </div>
+
       <div className={`p-5 flex flex-col gap-3 relative z-20 bg-white ${isTallCard ? "md:p-6" : ""}`}>
         <h3 className="text-[17px] font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-rose-500 group-hover:to-orange-500 transition-colors line-clamp-2 leading-tight">
           {room.title}

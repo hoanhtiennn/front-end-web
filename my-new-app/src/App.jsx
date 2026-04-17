@@ -16,6 +16,7 @@ import PurchasePlanModal from "./modals/PurchasePlanModal";
 import RoomDetailModal from "./modals/RoomDetailModal";
 import PaymentResultModal from "./modals/PaymentResultModal";
 import MyPostsModal from "./modals/MyPostsModal";
+import SavedPostsModal from "./modals/SavedPostsModal";
 import { MOCK_ROOMS } from "./data/mockData";
 
 function MainApp() {
@@ -29,6 +30,8 @@ function MainApp() {
   const [showPricing, setShowPricing] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [showMyPosts, setShowMyPosts] = useState(false);
+  const [showSavedPosts, setShowSavedPosts] = useState(false);
+  const [savedRefreshKey, setSavedRefreshKey] = useState(0); // tăng lên mỗi lần mở → force reload
   const [editingPost, setEditingPost] = useState(null); // post obj khi edit
   
   // Kiểm tra xem có phải là trang return từ VNPay không
@@ -253,6 +256,7 @@ function MainApp() {
         onEditProfileClick={() => setShowEditProfile(true)}
         onPricingClick={() => setShowPricing(true)}
         onMyPostsClick={() => setShowMyPosts(true)}
+        onSavedPostsClick={() => { setSavedRefreshKey(k => k + 1); setShowSavedPosts(true); }}
       />
 
       {showAuth && <AuthPage mode={authMode} onBack={() => setShowAuth(false)} />}
@@ -273,11 +277,25 @@ function MainApp() {
             setShowMyPosts(false);
             setEditingPost(post);
           }}
+          onViewPost={(id) => {
+            setShowMyPosts(false);
+            setSelectedRoomId(id);
+          }}
         />
       )}
       {showEditProfile && <EditProfileModal onBack={() => setShowEditProfile(false)} />}
       {showPricing && <PurchasePlanModal onBack={() => setShowPricing(false)} />}
       {selectedRoomId && <RoomDetailModal roomId={selectedRoomId} onBack={() => setSelectedRoomId(null)} />}
+      {showSavedPosts && (
+        <SavedPostsModal
+          refreshKey={savedRefreshKey}
+          onBack={() => setShowSavedPosts(false)}
+          onOpenRoom={(id) => {
+            setShowSavedPosts(false);
+            setSelectedRoomId(id);
+          }}
+        />
+      )}
       {isPaymentReturn && <PaymentResultModal />}
 
       <Hero />
