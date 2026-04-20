@@ -13,16 +13,17 @@ export const UserProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => {
-        const u = res.data;
+        // Backend có thể wrap response trong { code, result: {...} } hoặc { code, data: {...} }
+        const u = res.data?.result || res.data?.data || res.data;
         setUser({ 
           id: u.id, 
-          name: u.fullName || u.full_name || u.email?.split("@")[0], 
+          name: u.fullName || u.full_name || u.name || u.email?.split("@")[0], 
           email: u.email,
           phone: u.phone,
           role: u.role, 
           plan: u.plan,
-          avatarUrl: u.avatar_url || u.avatarUrl,
-          // Lượt đăng bài còn lại
+          avatarUrl: u.avatar_url || u.avatarUrl || u.profilePicture || u.photo,
+          isVerified: u.isVerified || u.is_verified || false,
           remainingPosts: u.remainingPosts ?? u.remaining_posts ?? null,
           token 
         });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart } from "lucide-react";
+import { Heart, ShieldCheck } from "lucide-react";
 import axios from "axios";
 import { useUser } from "../contexts/UserContext";
 import { toggleSavePost, isPostSaved } from "../modals/SavedPostsModal";
@@ -88,12 +88,27 @@ const RoomCard = ({ room, index, onClick }) => {
             />
           </button>
         </div>
+
+        {/* Verified badge - góc dưới trái ảnh */}
+        {room.isOwnerVerified && (
+          <div className="absolute bottom-4 left-4 z-10">
+            <span className="flex items-center gap-1 bg-emerald-500/90 backdrop-blur-md text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-lg border border-emerald-400/50">
+              <ShieldCheck className="w-3 h-3" /> Đã xác minh
+            </span>
+          </div>
+        )}
       </div>
 
       <div className={`p-5 flex flex-col gap-3 relative z-20 bg-white ${isTallCard ? "md:p-6" : ""}`}>
         <h3 className="text-[17px] font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-rose-500 group-hover:to-orange-500 transition-colors line-clamp-2 leading-tight">
           {room.title}
         </h3>
+        {room.isOwnerVerified && (
+          <div className="flex items-center gap-1 text-emerald-600 text-[12px] font-bold -mt-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Chủ trọ đã xác minh danh tính
+          </div>
+        )}
         <div className="flex items-center gap-2 text-gray-500">
           <span className="text-rose-500 font-bold opacity-70">📍</span>
           <p className="text-sm truncate font-medium">
