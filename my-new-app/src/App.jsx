@@ -18,6 +18,7 @@ import PaymentResultModal from "./modals/PaymentResultModal";
 import MyPostsModal from "./modals/MyPostsModal";
 import SavedPostsModal from "./modals/SavedPostsModal";
 import VerificationModal from "./modals/VerificationModal";
+import AdminApp from "./pages/admin/AdminApp";
 
 function MainApp() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,6 +40,7 @@ function MainApp() {
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
   const [editingPost, setEditingPost] = useState(null);
   const [showVerification, setShowVerification] = useState(false);
+  const [isAdminView, setIsAdminView] = useState(false);
 
   // Kiểm tra xem có phải là trang return từ VNPay không
   const isPaymentReturn = new URLSearchParams(window.location.search).has(
@@ -287,6 +289,10 @@ function MainApp() {
       fetchSearch();
     });
 
+  if (isAdminView) {
+    return <AdminApp onExit={() => setIsAdminView(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
       <Navbar
@@ -297,11 +303,12 @@ function MainApp() {
         onEditProfileClick={() => setShowEditProfile(true)}
         onPricingClick={() => setShowPricing(true)}
         onMyPostsClick={() => setShowMyPosts(true)}
-      onSavedPostsClick={() => {
+        onSavedPostsClick={() => {
           setSavedRefreshKey((k) => k + 1);
           setShowSavedPosts(true);
         }}
         onVerifyClick={() => setShowVerification(true)}
+        onAdminClick={() => setIsAdminView(true)}
       />
 
       {showAuth && (

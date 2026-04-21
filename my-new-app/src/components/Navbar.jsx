@@ -23,7 +23,7 @@ const VerifyBadge = ({ status }) => {
   return null;
 };
 
-const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick, onVerifyClick }) => {
+const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick, onVerifyClick, onAdminClick }) => {
   const { user, logout } = useUser();
   const [verifyStatus, setVerifyStatus] = useState(null);
 
@@ -121,7 +121,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                   </div>
                 )}
                 {/* Saved Posts button — chỉ hiện cho người thuê (không phải LANDLORD) */}
-                {user.role !== "LANDLORD" && (
+                {user.role !== "LANDLORD" && user.role !== "ADMIN" && (
                   <button
                     onClick={onSavedPostsClick}
                     title="Bài đã thích"
@@ -129,6 +129,14 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                   >
                     <Heart className="w-4 h-4" />
                     <span className="hidden sm:inline">Đã Thích</span>
+                  </button>
+                )}
+                {user.role === "ADMIN" && (
+                  <button
+                    onClick={onAdminClick}
+                    className="bg-black text-white text-[13px] font-bold px-4 py-2 rounded-full hover:bg-gray-800 transition-colors"
+                  >
+                    Admin Dashboard
                   </button>
                 )}
                 <button
