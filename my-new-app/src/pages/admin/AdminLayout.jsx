@@ -30,7 +30,7 @@ export default function AdminLayout({ activeTab, setActiveTab, onExit, children 
             <span className="w-6 h-6 bg-white text-gray-950 flex items-center justify-center font-black rounded-sm">
               T
             </span>
-            TroTot Admin
+            TroTot
           </h1>
         </div>
 
