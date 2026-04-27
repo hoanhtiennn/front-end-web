@@ -94,6 +94,10 @@ const VerificationModal = ({ onBack }) => {
 
   // Kiểm tra trạng thái xác minh hiện tại
   useEffect(() => {
+    let isMounted = true;
+    setStatus(null);
+    setLoadingStatus(true);
+    
     // Nếu user đã được verified từ trước (flag isVerified)
     if (user?.isVerified) {
       setStatus({ status: "APPROVED" });
@@ -105,15 +109,21 @@ const VerificationModal = ({ onBack }) => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
+        if (!isMounted) return;
         const d = res.data?.result || res.data?.data || res.data;
         setStatus(d);
       })
       .catch(err => {
+        if (!isMounted) return;
         if (err.response?.status !== 404) {
           console.error("Lỗi lấy trạng thái xác minh:", err);
         }
       })
-      .finally(() => setLoadingStatus(false));
+      .finally(() => {
+        if (isMounted) setLoadingStatus(false);
+      });
+      
+    return () => { isMounted = false; };
   // dùng user.id thay vì user để tránh loop vô hạn
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.id, user?.isVerified]);
@@ -152,7 +162,6 @@ const VerificationModal = ({ onBack }) => {
       await axios.post("/api/verifications", {
         idCardFrontPublicId: frontId,
         idCardBackPublicId:  backId,
-        roomPhotosPublicId:  null,
         note: note || null,
       }, {
         headers: { Authorization: `Bearer ${token}` }

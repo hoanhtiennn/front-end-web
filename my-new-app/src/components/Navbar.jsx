@@ -1,45 +1,8 @@
 import { useUser } from "../contexts/UserContext";
-import { Heart, ShieldCheck, Clock, XCircle } from "lucide-react";
-import { useState, useEffect } from "react";
-import axios from "axios";
-
-const VerifyBadge = ({ status }) => {
-  if (!status) return null;
-  if (status === "APPROVED") return (
-    <span className="flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-      <ShieldCheck className="w-3 h-3" /> Đã XM
-    </span>
-  );
-  if (status === "PENDING" || status === "PENDING_MANUAL") return (
-    <span className="flex items-center gap-1 text-[10px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-      <Clock className="w-3 h-3" /> Chờ duyệt
-    </span>
-  );
-  if (status === "REJECTED") return (
-    <span className="flex items-center gap-1 text-[10px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded-full">
-      <XCircle className="w-3 h-3" /> Từ chối
-    </span>
-  );
-  return null;
-};
+import { Heart, ShieldCheck } from "lucide-react";
 
 const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick, onVerifyClick, onAdminClick }) => {
   const { user, logout } = useUser();
-  const [verifyStatus, setVerifyStatus] = useState(null);
-
-  useEffect(() => {
-    if (!user || user.role !== "LANDLORD") return;
-    // Nếu user đã verified → không cần gọi API
-    if (user.isVerified) { setVerifyStatus("APPROVED"); return; }
-    const token = localStorage.getItem("userToken");
-    axios.get("/api/verifications/me", { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => {
-        const d = res.data?.result || res.data?.data || res.data;
-        setVerifyStatus(d?.status || null);
-      })
-      .catch(() => setVerifyStatus(null));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.isVerified]);
   return (
     <nav className="bg-white/95 backdrop-blur-3xl sticky top-0 z-50 px-4 md:px-8 py-3 shadow-sm border-b border-rose-500/10">
       <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center">
@@ -97,7 +60,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                     >
                       Bài đăng
                     </button>
-                    {verifyStatus === "APPROVED" ? (
+                    {user.isVerified ? (
                       <div className="flex items-center gap-1.5 px-3 py-2 text-emerald-600 text-[13px] font-black">
                         <ShieldCheck className="w-4 h-4" />
                         <span>Đã xác minh</span>
@@ -109,7 +72,6 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                       >
                         <ShieldCheck className="w-4 h-4" />
                         <span className="hidden md:inline">Xác minh</span>
-                        <VerifyBadge status={verifyStatus} />
                       </button>
                     )}
                     <button

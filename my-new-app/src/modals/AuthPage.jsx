@@ -41,7 +41,11 @@ const AuthPage = ({ mode, onBack }) => {
       const password = formData.get("password");
       const role = formData.get("role");
 
-      // Validate phía client khi đăng ký
+      // Validate phía client
+      if (!email.endsWith("@gmail.com")) {
+        return { error: "Email phải là địa chỉ Gmail (@gmail.com)!" };
+      }
+
       if (view === "REGISTER") {
         const phone = formData.get("phone");
         if (!/^0\d{9}$/.test(phone)) {

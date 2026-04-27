@@ -4,7 +4,7 @@ import { Search, ExternalLink, Ban, Eye, ChevronLeft, ChevronRight, RefreshCw, A
 
 const STATUS_MAP = {
   ACTIVE: { label: "Đang hiển thị", cls: "bg-green-100 text-green-800 border-green-200" },
-  CLOSED: { label: "Đã đóng",       cls: "bg-gray-200 text-gray-600 border-gray-300" },
+  CLOSED: { label: "Đã cho thuê",       cls: "bg-gray-200 text-gray-600 border-gray-300" },
 };
 
 const ROOM_TYPE_MAP = {
@@ -44,12 +44,21 @@ export default function AdminPosts() {
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams({ page, size: PAGE_SIZE });
+      const params = new URLSearchParams({ page: page + 1, size: PAGE_SIZE });
       if (statusFilter) params.append("status", statusFilter);
 
-      const res = await axios.get(`/api/posts?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      let res;
+      try {
+        // Thử gọi endpoint của Admin trước (để lấy cả bài ACTIVE và CLOSED)
+        res = await axios.get(`/api/posts/admin?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token()}` },
+        });
+      } catch (adminErr) {
+        // Fallback về API cũ nếu không có endpoint admin
+        res = await axios.get(`/api/posts?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token()}` },
+        });
+      }
 
       // Bóc data từ PageResponse hoặc wrapped response
       let content = [];
@@ -83,8 +92,10 @@ export default function AdminPosts() {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
-  // Search filter client-side (trên trang hiện tại)
+  // Search and status filter client-side (trên trang hiện tại)
   const displayed = posts.filter(p => {
+    if (statusFilter && p.status !== statusFilter) return false;
+    
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -132,7 +143,7 @@ export default function AdminPosts() {
         {[
           { label: "Tổng bài",       count: totalElements,  color: "text-gray-800",   bg: "bg-gray-50 border-gray-200" },
           { label: "Đang hiển thị",  count: activeCount,    color: "text-green-700",  bg: "bg-green-50 border-green-200" },
-          { label: "Đã đóng",        count: closedCount,    color: "text-gray-600",   bg: "bg-gray-100 border-gray-300" },
+          { label: "Đã cho thuê",    count: closedCount,    color: "text-gray-600",   bg: "bg-gray-100 border-gray-300" },
         ].map(s => (
           <div key={s.label} className={`rounded-xl border px-5 py-4 ${s.bg}`}>
             <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
@@ -146,7 +157,7 @@ export default function AdminPosts() {
         {[
           { value: "",       label: "Tất cả" },
           { value: "ACTIVE", label: "Đang hiển thị" },
-          { value: "CLOSED", label: "Đã đóng" },
+          { value: "CLOSED", label: "Đã cho thuê" },
         ].map(f => (
           <button
             key={f.value}
