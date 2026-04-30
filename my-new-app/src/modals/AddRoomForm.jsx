@@ -138,26 +138,41 @@ const AddRoomForm = ({ onBack, existingPost }) => {
       qp.append("district", formData.district);
       qp.append("city", formData.city);
 
-      let lat = String(existingPost?.latitude ?? "10.762622");
-      let lng = String(existingPost?.longitude ?? "106.660172");
-      try {
-        const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
-        if (GOONG_KEY?.trim()) {
-          const gr = await axios.get(`https://rsapi.goong.io/geocode?address=${encodeURIComponent(fullAddress)}&api_key=${GOONG_KEY.trim()}`);
-          if (gr.data?.results?.length > 0) {
-            lat = gr.data.results[0].geometry.location.lat;
-            lng = gr.data.results[0].geometry.location.lng;
+      let lat = Number.isFinite(existingPost?.latitude) ? existingPost.latitude : null;
+      let lng = Number.isFinite(existingPost?.longitude) ? existingPost.longitude : null;
+      if ((lat == null || lng == null) && fullAddress) {
+        try {
+          const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
+          if (GOONG_KEY?.trim()) {
+            const gr = await axios.get(
+              `https://rsapi.goong.io/geocode?address=${encodeURIComponent(fullAddress)}&api_key=${GOONG_KEY.trim()}`,
+              { timeout: 3000 },
+            );
+            if (gr.data?.results?.length > 0) {
+              lat = gr.data.results[0].geometry.location.lat;
+              lng = gr.data.results[0].geometry.location.lng;
+            }
           }
-        } else {
-          const nr = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`, {
-            headers: { "Accept-Language": "vi-VN" }
-          });
-          if (nr.data?.length > 0) { lat = nr.data[0].lat; lng = nr.data[0].lon; }
-        }
-      } catch (_) { /* dùng default / toạ độ cũ */ }
 
-      qp.append("latitude", lat);
-      qp.append("longitude", lng);
+          if (lat == null || lng == null) {
+            const nr = await axios.get(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`,
+              { headers: { "Accept-Language": "vi-VN" }, timeout: 2500 },
+            );
+            if (nr.data?.length > 0) {
+              lat = nr.data[0].lat;
+              lng = nr.data[0].lon;
+            }
+          }
+        } catch {
+          // Geocoding is optional on FE. Skip lat/lng when providers are slow or unavailable.
+        }
+      }
+
+      if (lat != null && lng != null) {
+        qp.append("latitude", String(lat));
+        qp.append("longitude", String(lng));
+      }
       qp.append("price", formData.price.replace(/,/g, ""));
       qp.append("area", formData.area);
       qp.append("roomType", formData.roomType);

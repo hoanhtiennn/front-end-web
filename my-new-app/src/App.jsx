@@ -170,6 +170,12 @@ function MainApp() {
     }
   };
 
+  const GEOLOCATION_OPTIONS = {
+    enableHighAccuracy: false,
+    timeout: 7000,
+    maximumAge: 5 * 60 * 1000,
+  };
+
   const handleGetLocation = () =>
     enforceAuth(() => {
       setIsLocating(true);
@@ -179,36 +185,54 @@ function MainApp() {
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
+        (pos) => {
           const { latitude, longitude } = pos.coords;
+          localStorage.setItem(
+            "lastKnownLocation",
+            JSON.stringify({ latitude, longitude, ts: Date.now() }),
+          );
 
-          // Gọi API đảo ngược toạ độ thành chữ (Reverse Geocoding) thông qua Goong API
-          try {
-            const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
-            if (!GOONG_KEY) throw new Error("Missing Goong API Key");
+          // Show coordinates immediately for faster feedback.
+          setSearchTerm(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          fetchNearbyRooms(latitude, longitude).finally(() => setIsLocating(false));
 
-            const res = await axios.get(
-              `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${GOONG_KEY}`,
-            );
-            if (res.data && res.data.results && res.data.results.length > 0) {
-              // Lấy địa chỉ hiển thị
-              const addressParts = res.data.results[0].formatted_address;
-              setSearchTerm(addressParts);
-            } else {
-              setSearchTerm(`${latitude}, ${longitude}`);
+          // Reverse geocoding runs in background to avoid blocking nearby search.
+          (async () => {
+            try {
+              const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
+              if (!GOONG_KEY?.trim()) return;
+              const res = await axios.get(
+                `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${GOONG_KEY.trim()}`,
+                { timeout: 3000 },
+              );
+              const formatted = res.data?.results?.[0]?.formatted_address;
+              if (formatted) setSearchTerm(formatted);
+            } catch {
+              // Keep coordinate text fallback.
             }
-          } catch (e) {
-            setSearchTerm(`${latitude}, ${longitude}`); // Fallback
+          })();
+        },
+        () => {
+          // GPS timeout/fail: fallback to recent cached location.
+          try {
+            const cached = JSON.parse(localStorage.getItem("lastKnownLocation") || "null");
+            if (cached?.latitude && cached?.longitude) {
+              setSearchTerm(
+                `${Number(cached.latitude).toFixed(6)}, ${Number(cached.longitude).toFixed(6)}`
+              );
+              fetchNearbyRooms(cached.latitude, cached.longitude).finally(() =>
+                setIsLocating(false),
+              );
+              return;
+            }
+          } catch {
+            // no-op
           }
 
-          fetchNearbyRooms(latitude, longitude).finally(() =>
-            setIsLocating(false),
-          );
-        },
-        (err) => {
-          alert("Không thể lấy vị trí. Vui lòng cấp quyền GPS cho web.");
+          alert("Không thể lấy vị trí nhanh. Vui lòng bật GPS hoặc thử lại.");
           setIsLocating(false);
         },
+        GEOLOCATION_OPTIONS,
       );
     });
 
