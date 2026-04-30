@@ -1,0 +1,571 @@
+﻿{
+  "info": {
+    "name": "RentalListing Backend - Render Host",
+    "description": "Requests extracted from FE axios calls. Base host is already set to Render API domain.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.baokhangtech.id.vn" },
+    { "key": "token", "value": "" },
+    { "key": "userId", "value": "1" },
+    { "key": "postId", "value": "1" },
+    { "key": "savedPostId", "value": "1" },
+    { "key": "verificationId", "value": "1" },
+    { "key": "planId", "value": "PRO" },
+    { "key": "year", "value": "2026" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "const token = data.token || data.accessToken || data.jwt;",
+                  "if (token) pm.collectionVariables.set('token', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Test User\",\n  \"phone\": \"0901234567\",\n  \"email\": \"user@gmail.com\",\n  \"password\": \"123456\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "POST /auth/login-google",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"google_access_token\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login-google"
+          }
+        },
+        {
+          "name": "POST /auth/forgot-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          }
+        },
+        {
+          "name": "POST /auth/verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-otp"
+          }
+        },
+        {
+          "name": "POST /auth/reset-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"newPassword\": \"new_password_123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /api/users/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "PUT /api/users/:userId",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullName", "value": "Test User", "type": "text" },
+                { "key": "full_name", "value": "Test User", "type": "text" },
+                { "key": "phone", "value": "0901234567", "type": "text" },
+                { "key": "plan", "value": "FREE", "type": "text" },
+                { "key": "password", "value": "", "type": "text" },
+                { "key": "avatar", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/users/:userId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "GET /api/users?page=0&size=500",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users?page=0&size=500"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "GET /api/posts (list/search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts?page=1&size=20&title=&minPrice=&maxPrice=&roomType="
+          }
+        },
+        {
+          "name": "GET /api/posts/nearby",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/nearby?lat=10.762622&lng=106.660172&radius=2&page=1&size=20"
+          }
+        },
+        {
+          "name": "GET /api/posts/my-posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/my-posts?page=1&size=50"
+          }
+        },
+        {
+          "name": "GET /api/posts/:postId",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/{{postId}}"
+          }
+        },
+        {
+          "name": "POST /api/posts (multipart + query)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "images", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/posts?title=Phong+tro+Q1&description=Mo+ta&address=123+Le+Loi&ward=Ben+Nghe&district=1&city=Ho+Chi+Minh&latitude=10.762622&longitude=106.660172&price=3000000&area=20&roomType=PHONG_TRO&amenities=Wifi&amenities=May+lanh"
+          }
+        },
+        {
+          "name": "PUT /api/posts/:postId (multipart + query)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "images", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/posts/{{postId}}?title=Cap+nhat+tin&description=Mo+ta+moi&address=123+Le+Loi&ward=Ben+Nghe&district=1&city=Ho+Chi+Minh&price=3200000&area=22&roomType=PHONG_TRO"
+          }
+        },
+        {
+          "name": "PATCH /api/posts/:postId/status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/{{postId}}/status?status=ACTIVE"
+          }
+        },
+        {
+          "name": "DELETE /api/posts/:postId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/{{postId}}"
+          }
+        },
+        {
+          "name": "GET /api/posts/:postId/reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/{{postId}}/reviews"
+          }
+        },
+        {
+          "name": "POST /api/posts/:postId/reviews",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Phong sach se, gia hop ly\"\n}"
+            },
+            "url": "{{baseUrl}}/api/posts/{{postId}}/reviews"
+          }
+        },
+        {
+          "name": "GET /api/posts/admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/posts/admin?page=0&size=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Saved Posts",
+      "item": [
+        {
+          "name": "GET /api/saved-posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/saved-posts"
+          }
+        },
+        {
+          "name": "POST /api/saved-posts/:postId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/saved-posts/{{postId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/saved-posts/:savedPostId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/saved-posts/{{savedPostId}}"
+          }
+        },
+        {
+          "name": "GET /api/saved-posts/count/:postId",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/saved-posts/count/{{postId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Amenities",
+      "item": [
+        {
+          "name": "GET /api/amenities",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/amenities"
+          }
+        },
+        {
+          "name": "POST /api/amenities",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Wifi\"\n}"
+            },
+            "url": "{{baseUrl}}/api/amenities"
+          }
+        },
+        {
+          "name": "DELETE /api/amenities/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/amenities/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verifications",
+      "item": [
+        {
+          "name": "GET /api/verifications/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/verifications/me"
+          }
+        },
+        {
+          "name": "POST /api/upload/verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/upload/verification"
+          }
+        },
+        {
+          "name": "POST /api/verifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCardFrontPublicId\": \"front_public_id\",\n  \"idCardBackPublicId\": \"back_public_id\",\n  \"note\": \"optional note\"\n}"
+            },
+            "url": "{{baseUrl}}/api/verifications"
+          }
+        },
+        {
+          "name": "GET /api/verifications (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/verifications?page=0&size=200&status=PENDING"
+          }
+        },
+        {
+          "name": "PUT /api/verifications/:verificationId/approve",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/api/verifications/{{verificationId}}/approve"
+          }
+        },
+        {
+          "name": "PUT /api/verifications/:verificationId/reject",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Image not clear\"\n}"
+            },
+            "url": "{{baseUrl}}/api/verifications/{{verificationId}}/reject"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "GET /api/plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/plans"
+          }
+        },
+        {
+          "name": "PUT /api/plans/:planId",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{planId}}\",\n  \"displayName\": \"PRO\",\n  \"priceMonthly\": 99000,\n  \"priceYearly\": 990000,\n  \"maxPosts\": 20,\n  \"maxImages\": 10\n}"
+            },
+            "url": "{{baseUrl}}/api/plans/{{planId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "POST /api/subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"planId\": \"PRO\",\n  \"isMonthly\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/subscriptions"
+          }
+        },
+        {
+          "name": "GET /api/subscriptions/subscription-stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/subscriptions/subscription-stats?year={{year}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "GET /api/payments/return",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/return?vnp_Amount=10000000&vnp_BankCode=NCB&vnp_OrderInfo=test&vnp_ResponseCode=00&vnp_SecureHash=test"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "GET /api/admin/stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/admin/stats"
+          }
+        }
+      ]
+    }
+  ]
+}
