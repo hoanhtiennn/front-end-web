@@ -3,10 +3,16 @@ import { Heart, ShieldCheck } from "lucide-react";
 
 const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick, onVerifyClick, onAdminClick }) => {
   const { user, logout } = useUser();
+  const goHome = () => {
+    window.location.href = "/";
+  };
   return (
     <nav className="bg-white/95 backdrop-blur-3xl sticky top-0 z-50 px-4 md:px-8 py-3 shadow-sm border-b border-rose-500/10">
       <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center">
-        <div className="text-2xl font-black cursor-pointer tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-500 drop-shadow-sm hover:scale-[1.02] transition-transform duration-300">
+        <div
+          onClick={goHome}
+          className="text-2xl font-black cursor-pointer tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-500 drop-shadow-sm hover:scale-[1.02] transition-transform duration-300"
+        >
           PRO.STAY
         </div>
         <div className="flex items-center gap-4">
@@ -111,7 +117,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                   onClick={logout}
                   className="text-red-500 text-[13px] font-bold hover:text-red-600 transition-colors hover:bg-red-50 px-3 py-2 rounded-full"
                 >
-                  Thoát
+                  Đăng xuất
                 </button>
               </div>
 

@@ -4,24 +4,24 @@ import { useUser } from "../contexts/UserContext";
 import { X, Camera, User, Phone, Mail, Lock, Trash2, ShieldAlert, Save, RotateCcw, Eye, EyeOff } from "lucide-react";
 
 const PLAN_BADGE = {
-  FREE:  { label: "FREE",  color: "bg-gray-700 text-gray-300 border-gray-600" },
-  PRO:   { label: "PRO",   color: "bg-amber-500/20 text-amber-300 border-amber-500/40" },
-  ULTRA: { label: "ULTRA", color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" },
+  FREE:  { label: "FREE",  color: "bg-gray-100 text-gray-600 border-gray-300" },
+  PRO:   { label: "PRO",   color: "bg-amber-50 text-amber-700 border-amber-300" },
+  ULTRA: { label: "ULTRA", color: "bg-cyan-50 text-cyan-700 border-cyan-300" },
 };
 
 const InputField = ({ icon: Icon, label, note, ...props }) => (
   <div className="space-y-1.5">
-    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider">
       {label}
-      {note && <span className="normal-case text-gray-600 font-normal">({note})</span>}
+      {note && <span className="normal-case text-gray-500 font-normal">({note})</span>}
     </label>
     <div className="relative">
       {Icon && (
         <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
       )}
       <input
-        className={`w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-3 pr-4 text-sm text-gray-200 placeholder-gray-600
-          focus:outline-none focus:border-cyan-500/60 focus:bg-gray-900 transition-all
+        className={`w-full bg-white border border-gray-300 rounded-xl py-3 pr-4 text-sm text-gray-800 placeholder-gray-400
+          focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all
           disabled:opacity-40 disabled:cursor-not-allowed
           ${Icon ? "pl-10" : "pl-4"}`}
         {...props}
@@ -81,22 +81,28 @@ const EditProfileModal = ({ onBack }) => {
     const fd = new FormData(e.target);
     try {
       if (!user.id) throw new Error("Chưa có ID người dùng!");
+      const token = user.token || localStorage.getItem("userToken");
+      if (!token) throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       const apiFormData = new FormData();
       apiFormData.append("fullName", fd.get("fullName"));
       apiFormData.append("full_name", fd.get("fullName"));
       apiFormData.append("phone", fd.get("phone"));
       apiFormData.append("plan", user.plan || "FREE");
       apiFormData.append("password", fd.get("password")?.trim() || "");
-      if (avatarBlob) apiFormData.append("avatar", avatarBlob, "avatar.jpg");
+      if (avatarBlob) {
+        apiFormData.append("avatar", avatarBlob, "avatar.jpg");
+        apiFormData.append("profilePicture", avatarBlob, "avatar.jpg");
+        apiFormData.append("file", avatarBlob, "avatar.jpg");
+      }
 
       const res = await axios.put(`/api/users/${user.id}`, apiFormData, {
-        headers: { Authorization: `Bearer ${user.token}`, "Content-Type": "multipart/form-data" }
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
       });
-      const d = res.data;
+      const d = res.data?.result || res.data?.data || res.data;
       updateUser({
         name: d.fullName || d.full_name || fd.get("fullName"),
         phone: d.phone || fd.get("phone"),
-        avatarUrl: d.avatar_url || d.avatarUrl || previewAvatar,
+        avatarUrl: d.avatar_url || d.avatarUrl || d.profilePicture || d.photo || previewAvatar,
       });
       setSuccess(true);
       setTimeout(() => onBack(), 1200);
@@ -111,8 +117,10 @@ const EditProfileModal = ({ onBack }) => {
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try {
+      const token = user.token || localStorage.getItem("userToken");
+      if (!token) throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       await axios.delete(`/api/users/${user.id}`, {
-        headers: { Authorization: `Bearer ${user.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       onBack(); logout(); window.location.reload();
     } catch (err) {
@@ -125,20 +133,20 @@ const EditProfileModal = ({ onBack }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-md bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-[fadeUp_0.3s_ease-out]">
+      <div className="relative w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden animate-[fadeUp_0.3s_ease-out]">
 
         {/* Subtle top glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-cyan-300/30 rounded-full blur-[60px] pointer-events-none" />
 
         {/* Header */}
-        <div className="relative flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
+        <div className="relative flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-bold text-white">Hồ sơ cá nhân</h2>
+            <h2 className="text-xl font-bold text-gray-900">Hồ sơ cá nhân</h2>
             <p className="text-xs text-gray-500 mt-0.5">Cập nhật thông tin tài khoản của bạn</p>
           </div>
           <button
             onClick={onBack}
-            className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all"
+            className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -152,8 +160,8 @@ const EditProfileModal = ({ onBack }) => {
               <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto mb-4">
                 <ShieldAlert className="w-8 h-8 text-rose-400" />
               </div>
-              <h3 className="text-xl font-black text-white mb-2">Xác nhận xoá?</h3>
-              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              <h3 className="text-xl font-black text-gray-900 mb-2">Xác nhận xoá?</h3>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                 Toàn bộ dữ liệu cá nhân, tin đăng và lịch sử của bạn sẽ bị xoá <span className="text-rose-400 font-semibold">vĩnh viễn</span> và không thể khôi phục.
               </p>
               {error && (
@@ -163,7 +171,7 @@ const EditProfileModal = ({ onBack }) => {
                 <button
                   onClick={() => { setShowDeleteConfirm(false); setError(""); }}
                   disabled={deleteLoading}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:bg-gray-800 transition-all disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-semibold hover:bg-gray-100 transition-all disabled:opacity-50"
                 >
                   Huỷ bỏ
                 </button>
@@ -180,9 +188,9 @@ const EditProfileModal = ({ onBack }) => {
             <form onSubmit={handleSubmit} className="space-y-5">
 
               {/* AVATAR */}
-              <div className="flex items-center gap-4 p-4 bg-gray-900/50 rounded-xl border border-gray-800">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="relative shrink-0">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
                     {previewAvatar ? (
                       <img src={previewAvatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
@@ -201,7 +209,7 @@ const EditProfileModal = ({ onBack }) => {
                 </div>
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{user.name || "Chưa đặt tên"}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{user.name || "Chưa đặt tên"}</p>
                   <p className="text-xs text-gray-500 truncate mb-2">{user.email}</p>
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${plan.color}`}>
@@ -214,7 +222,7 @@ const EditProfileModal = ({ onBack }) => {
                   <button
                     type="button"
                     onClick={() => { setPreviewAvatar(user.avatarUrl || ""); setAvatarBlob(null); }}
-                    className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-700 transition-all"
+                    className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all"
                     title="Hoàn tác"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -237,8 +245,8 @@ const EditProfileModal = ({ onBack }) => {
                 placeholder="Ví dụ: 0901234567" />
 
               <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Mật khẩu mới <span className="normal-case text-gray-600 font-normal">(tuỳ chọn)</span>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Mật khẩu mới <span className="normal-case text-gray-500 font-normal">(tuỳ chọn)</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
@@ -246,12 +254,12 @@ const EditProfileModal = ({ onBack }) => {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Bỏ trống nếu không muốn đổi"
-                    className="w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-3 pl-10 pr-11 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-500/60 focus:bg-gray-900 transition-all"
+                    className="w-full bg-white border border-gray-300 rounded-xl py-3 pl-10 pr-11 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -274,7 +282,7 @@ const EditProfileModal = ({ onBack }) => {
               <div className="flex gap-3 pt-1">
                 <button
                   type="button" onClick={onBack} disabled={loading}
-                  className="w-1/3 py-2.5 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 hover:text-white transition-all disabled:opacity-50"
+                  className="w-1/3 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-100 hover:text-gray-900 transition-all disabled:opacity-50"
                 >
                   Huỷ
                 </button>

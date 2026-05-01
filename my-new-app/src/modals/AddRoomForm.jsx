@@ -32,21 +32,21 @@ const AMENITIES = [
 
 const SectionTitle = ({ icon: Icon, children }) => (
   <div className="flex items-center gap-2 mb-3">
-    <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-      <Icon className="w-3.5 h-3.5 text-cyan-400" />
+    <div className="w-7 h-7 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center">
+      <Icon className="w-3.5 h-3.5 text-cyan-600" />
     </div>
-    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{children}</h3>
+    <h3 className="text-xs font-bold text-gray-600 uppercase tracking-widest">{children}</h3>
   </div>
 );
 
 const Field = ({ label, children }) => (
   <div className="space-y-1.5">
-    {label && <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>}
+    {label && <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
     {children}
   </div>
 );
 
-const inputCls = "w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-2.5 px-4 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-500/60 focus:bg-gray-900 transition-all";
+const inputCls = "w-full bg-white border border-gray-300 rounded-xl py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all";
 
 const PLAN_LIMITS = { FREE: 3, PRO: 33, ULTRA: 103 };
 
@@ -207,16 +207,16 @@ const AddRoomForm = ({ onBack, existingPost }) => {
   // SUCCESS SCREEN
   if (success) return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm bg-[#0D1117] border border-gray-800 rounded-2xl p-8 text-center animate-[fadeUp_0.4s_ease-out]">
+      <div className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl p-8 text-center animate-[fadeUp_0.4s_ease-out]">
         <div className="relative w-20 h-20 mx-auto mb-5">
           <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
           <div className="relative w-20 h-20 bg-emerald-500/10 rounded-full border border-emerald-500/30 flex items-center justify-center">
             <CheckCircle2 className="w-10 h-10 text-emerald-400" />
           </div>
         </div>
-        <h2 className="text-2xl font-black text-white mb-2">{isEditMode ? "Cập nhật thành công!" : "Đăng tin thành công!"}</h2>
-        <p className="text-gray-400 text-sm">{isEditMode ? "Bài đăng của bạn đã được cập nhật." : "Tin đăng của bạn đã được ghi nhận và đang chờ duyệt."}</p>
-        <p className="text-xs text-gray-600 mt-3">Tự động đóng...</p>
+        <h2 className="text-2xl font-black text-gray-900 mb-2">{isEditMode ? "Cập nhật thành công!" : "Đăng tin thành công!"}</h2>
+        <p className="text-gray-600 text-sm">{isEditMode ? "Bài đăng của bạn đã được cập nhật." : "Tin đăng của bạn đã được ghi nhận và đang chờ duyệt."}</p>
+        <p className="text-xs text-gray-500 mt-3">Tự động đóng...</p>
       </div>
       <style dangerouslySetInnerHTML={{__html:`@keyframes fadeUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}} />
     </div>
@@ -224,23 +224,23 @@ const AddRoomForm = ({ onBack, existingPost }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-2xl bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] animate-[fadeUp_0.3s_ease-out]">
+      <div className="relative w-full max-w-2xl bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] animate-[fadeUp_0.3s_ease-out]">
 
         {/* Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 bg-cyan-500/8 rounded-full blur-[60px] pointer-events-none" />
 
         {/* HEADER */}
-        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 shrink-0">
+        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-cyan-400" />
+            <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-cyan-600" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white leading-tight">{isEditMode ? "Sửa bài đăng" : "Đăng tin phòng mới"}</h2>
+              <h2 className="text-lg font-bold text-gray-900 leading-tight">{isEditMode ? "Sửa bài đăng" : "Đăng tin phòng mới"}</h2>
               <p className="text-xs text-gray-500">{isEditMode ? "Cập nhật thông tin bài đăng của bạn" : "Điền đầy đủ thông tin để tiếp cận sinh viên"}</p>
             </div>
           </div>
-          <button onClick={onBack} className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all">
+          <button onClick={onBack} className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -252,7 +252,7 @@ const AddRoomForm = ({ onBack, existingPost }) => {
               ? "bg-rose-500/10 border-rose-500/30"
               : remaining <= 3
               ? "bg-amber-500/10 border-amber-500/30"
-              : "bg-gray-900/50 border-gray-800"
+              : "bg-cyan-50 border-cyan-200"
           }`}>
             <Info className={`w-4 h-4 shrink-0 ${isExhausted ? "text-rose-400" : remaining <= 3 ? "text-amber-400" : "text-gray-500"}`} />
             <div className="flex-1 text-sm">
@@ -261,11 +261,11 @@ const AddRoomForm = ({ onBack, existingPost }) => {
               ) : (
                 <span className={remaining <= 3 ? "text-amber-300" : "text-gray-400"}>
                   Lượt đăng còn lại:{" "}
-                  <strong className={remaining <= 3 ? "text-amber-300" : "text-white"}>{remaining}</strong>
+                    <strong className={remaining <= 3 ? "text-amber-500" : "text-cyan-700"}>{remaining}</strong>
                 </span>
               )}
             </div>
-            <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden shrink-0">
+            <div className="w-24 h-1.5 bg-white/80 border border-gray-200 rounded-full overflow-hidden shrink-0">
               <div
                 className={`h-full rounded-full transition-all ${
                   isExhausted ? "bg-rose-500" : remaining <= 3 ? "bg-amber-400" : "bg-cyan-500"
@@ -291,7 +291,7 @@ const AddRoomForm = ({ onBack, existingPost }) => {
               <Field label="Loại phòng">
                 <select name="roomType" required value={formData.roomType}
                   onChange={handleChange}
-                  className={`${inputCls} bg-gray-900`}>
+                  className={inputCls}>
                   {ROOM_TYPES.map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
@@ -362,7 +362,7 @@ const AddRoomForm = ({ onBack, existingPost }) => {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 active:scale-95 ${
                       active
                         ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
-                        : "bg-gray-900/50 border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                        : "bg-white border-gray-300 text-gray-600 hover:border-cyan-300 hover:text-cyan-700"
                     }`}>
                     <span>{icon}</span>
                     {label}
@@ -387,20 +387,20 @@ const AddRoomForm = ({ onBack, existingPost }) => {
             <label className={`flex flex-col items-center justify-center w-full min-h-[110px] border-2 rounded-xl cursor-pointer transition-all ${
               imagePreviews.length > 0
                 ? "border-cyan-500/40 bg-cyan-500/5"
-                : "border-gray-700 border-dashed bg-gray-900/40 hover:border-gray-500 hover:bg-gray-900/60"
+                : "border-gray-300 border-dashed bg-gray-50 hover:border-cyan-300 hover:bg-cyan-50/40"
             }`}>
               {imagePreviews.length > 0 ? (
                 <div className="flex gap-2 p-3 flex-wrap justify-center">
                   {imagePreviews.map((src, i) => (
-                    <img key={i} src={src} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-700" />
+                    <img key={i} src={src} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-300" />
                   ))}
-                  <div className="h-16 w-16 rounded-lg border border-dashed border-gray-600 flex items-center justify-center text-gray-500 text-xs">+Thêm</div>
+                  <div className="h-16 w-16 rounded-lg border border-dashed border-gray-400 flex items-center justify-center text-gray-500 text-xs">+Thêm</div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center py-6 text-gray-500">
-                  <ImagePlus className="w-8 h-8 mb-2 text-gray-600" />
+                <div className="flex flex-col items-center py-6 text-gray-600">
+                  <ImagePlus className="w-8 h-8 mb-2 text-gray-500" />
                   <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
-                  <p className="text-xs text-gray-600 mt-1">Có thể chọn nhiều ảnh cùng lúc</p>
+                  <p className="text-xs text-gray-500 mt-1">Có thể chọn nhiều ảnh cùng lúc</p>
                 </div>
               )}
               <input type="file" name="images" multiple accept="image/*"
@@ -421,7 +421,7 @@ const AddRoomForm = ({ onBack, existingPost }) => {
           {/* BUTTONS */}
           <div className="flex gap-3 pt-1 pb-2">
             <button type="button" onClick={onBack} disabled={loading}
-              className="w-1/3 py-3 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 hover:text-white transition-all disabled:opacity-50">
+              className="w-1/3 py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-100 hover:text-gray-900 transition-all disabled:opacity-50">
               Huỷ
             </button>
             <button type="submit" disabled={loading || isExhausted}

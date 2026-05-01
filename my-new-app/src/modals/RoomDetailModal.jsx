@@ -291,12 +291,19 @@ export default function RoomDetailModal({ roomId, onBack }) {
   const fullAddressString = [room.address, room.ward, room.district, room.city]
     .filter(Boolean)
     .join(", ");
-  const hasAddress = !!fullAddressString;
-  const destinationParam = encodeURIComponent(fullAddressString);
+  const latitude = Number(room.latitude);
+  const longitude = Number(room.longitude);
+  const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+  const mapTarget = hasCoordinates ? `${latitude},${longitude}` : fullAddressString;
+  const hasMapTarget = !!mapTarget;
+  const destinationParam = encodeURIComponent(mapTarget);
+  const embedMapSrc = hasMapTarget
+    ? `https://www.google.com/maps?q=${encodeURIComponent(mapTarget)}&z=15&output=embed`
+    : "";
 
   const handleOpenMaps = () => {
-    if (!hasAddress) {
-      alert("Địa chỉ của phòng này chưa được cập nhật trên hệ thống!");
+    if (!hasMapTarget) {
+      alert("Địa chỉ hoặc tọa độ của phòng này chưa được cập nhật trên hệ thống!");
       return;
     }
     setIsGettingLocation(true);
@@ -721,26 +728,29 @@ export default function RoomDetailModal({ roomId, onBack }) {
                 Vị trí trọ trên Bản Đồ
               </h3>
 
-              <div className="w-full bg-slate-100 rounded-xl overflow-hidden border border-gray-200 flex-1 min-h-[150px] relative flex flex-col items-center justify-center text-center p-6 mb-4">
-                {hasAddress ? (
-                  <>
-                    <MapPin className="w-12 h-12 text-red-500 mb-2 opacity-80" />
-                    <p className="text-sm font-medium text-gray-600">
-                      Đã cập nhật địa chỉ trọ
-                    </p>
-                  </>
+              <div className="w-full bg-slate-100 rounded-xl overflow-hidden border border-gray-200 flex-1 min-h-[220px] relative mb-4">
+                {hasMapTarget ? (
+                  <iframe
+                    title="Google Map vi tri tro"
+                    src={embedMapSrc}
+                    className="w-full h-full min-h-[220px]"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
                 ) : (
-                  <p className="text-sm text-gray-400 italic">
-                    Chủ trọ chưa cập nhật địa chỉ trên hệ thống.
-                  </p>
+                  <div className="w-full h-full min-h-[220px] flex items-center justify-center text-center p-6">
+                    <p className="text-sm text-gray-400 italic">
+                      Chủ trọ chưa cập nhật địa chỉ/tọa độ trên hệ thống.
+                    </p>
+                  </div>
                 )}
               </div>
 
               <button
                 onClick={handleOpenMaps}
-                disabled={isGettingLocation || !hasAddress}
+                disabled={isGettingLocation || !hasMapTarget}
                 className={`w-full flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl transition duration-200 ${
-                  hasAddress
+                  hasMapTarget
                     ? "bg-blue-600 hover:bg-blue-700 text-white shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] active:scale-95 disabled:opacity-70 disabled:cursor-wait"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                 }`}

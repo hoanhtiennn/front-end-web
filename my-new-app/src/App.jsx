@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { UserProvider, useUser } from "./contexts/UserContext";
-// Import Components
 import Navbar from "./components/Navbar";
 import Hero from "./components/layout/Hero";
 import SearchBar from "./components/layout/SearchBar";
 import Footer from "./components/layout/Footer";
 import RoomCard from "./components/RoomCard";
 import AddRoomCard from "./components/AddRoomCard";
-// Import Modals & Data
 import AuthPage from "./modals/AuthPage";
 import AddRoomForm from "./modals/AddRoomForm";
 import EditProfileModal from "./modals/EditProfileModal";
@@ -31,6 +30,7 @@ function MainApp() {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState("LOGIN");
   const [isLocating, setIsLocating] = useState(false);
+  const [searchRadius, setSearchRadius] = useState(4);
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
@@ -41,8 +41,17 @@ function MainApp() {
   const [editingPost, setEditingPost] = useState(null);
   const [showVerification, setShowVerification] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false);
+  const [rooms, setRooms] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentEndpoint, setCurrentEndpoint] = useState("/api/posts");
+  const [currentParams, setCurrentParams] = useState({});
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
-  // Kiểm tra xem có phải là trang return từ VNPay không
+  const DEFAULT_PAGE_SIZE = 20;
+
   const isPaymentReturn = new URLSearchParams(window.location.search).has(
     "vnp_ResponseCode",
   );
@@ -58,99 +67,147 @@ function MainApp() {
     return callback();
   };
 
-  // Khởi tạo mảng rỗng thay vì dữ liệu ảo
-  const [rooms, setRooms] = useState([]);
+  const extractList = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.content)) return payload.content;
+    if (Array.isArray(payload?.result)) return payload.result;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.data?.content)) return payload.data.content;
+    if (Array.isArray(payload?.data?.result)) return payload.data.result;
+    return [];
+  };
 
-  // Tự động lấy danh sách bài đăng thật khi vừa mở trang
+  const parseMeta = (payload, currentPage, pageSize, currentItemsCount) => {
+    const root = payload?.data || payload || {};
+    const totalPagesRaw = root.totalPages ?? root.page?.totalPages;
+    const totalPages = Number(totalPagesRaw);
+    const hasTotalPages = Number.isFinite(totalPages) && totalPages > 0;
+    const totalItems = root.totalElements ?? root.totalItems ?? root.page?.totalElements;
+
+    const hasNextRaw = root.hasNext ?? root.page?.hasNext;
+    const hasNextBoolean =
+      typeof hasNextRaw === "boolean"
+        ? hasNextRaw
+        : root.last === false || root.page?.last === false;
+
+    if (typeof hasNextBoolean === "boolean") {
+      return { hasMore: hasNextBoolean, totalPages: hasTotalPages ? totalPages : undefined, totalItems };
+    }
+
+    if (hasTotalPages) {
+      return { hasMore: currentPage < totalPages, totalPages, totalItems };
+    }
+
+    return { hasMore: currentItemsCount >= pageSize, totalPages: hasTotalPages ? totalPages : undefined, totalItems };
+  };
+
+  const mapPostToRoom = (p) => {
+    let imgUrl =
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800";
+    if (p.images && p.images.length > 0) {
+      imgUrl = p.images[0].url || p.images[0].imageUrl || imgUrl;
+    }
+
+    return {
+      id: p.id,
+      title: p.title || "Phòng trọ",
+      price: (p.price || 0) / 1000000,
+      address: p.address || p.city || "Chưa cập nhật địa chỉ",
+      tag: p.roomType || "",
+      image: imgUrl,
+      planType: p.userPlan || p.plan || (p.user && p.user.plan) || "FREE",
+      isOwnerVerified: p.user?.isVerified || p.ownerVerified || false,
+      amenities: Array.isArray(p.amenities) ? p.amenities : [],
+    };
+  };
+
+  const fetchPostsPage = useCallback(async ({
+    endpoint,
+    headers,
+    params = {},
+    page = 1,
+    pageSize = DEFAULT_PAGE_SIZE,
+  }) => {
+    const query = new URLSearchParams({
+      ...params,
+      page: String(page),
+      size: String(pageSize),
+    });
+
+    const res = await axios.get(`${endpoint}?${query.toString()}`, { headers });
+    const items = extractList(res.data);
+    const meta = parseMeta(res.data, page, pageSize, items.length);
+
+    return { items, meta };
+  }, [DEFAULT_PAGE_SIZE]);
+
+  const loadRooms = useCallback(async ({
+    endpoint,
+    params = {},
+    page = 1,
+    retryWithoutToken = false,
+  }) => {
+    try {
+      setIsLoadingRooms(true);
+
+      const token = localStorage.getItem("userToken");
+      const headers =
+        token && !retryWithoutToken ? { Authorization: `Bearer ${token}` } : {};
+
+      const { items, meta } = await fetchPostsPage({
+        endpoint,
+        headers,
+        params,
+        page,
+      });
+
+      const mappedRooms = items.map(mapPostToRoom);
+
+      setRooms(mappedRooms);
+      setCurrentPage(page);
+      setTotalPages(meta.totalPages ?? 1);
+      setTotalResults(meta.totalItems ?? mappedRooms.length);
+      setHasMore(meta.hasMore);
+      setCurrentEndpoint(endpoint);
+      setCurrentParams(params);
+
+      return { items: mappedRooms, meta };
+    } catch (err) {
+      if (err.response?.status === 401 && !retryWithoutToken) {
+        return loadRooms({ endpoint, params, page, retryWithoutToken: true });
+      }
+
+      setRooms([]);
+      setHasMore(false);
+      setTotalPages(1);
+      setTotalResults(0);
+
+      console.error("Lỗi lấy bài đăng:", err);
+      throw err;
+    } finally {
+      setIsLoadingRooms(false);
+    }
+  }, [fetchPostsPage]);
+
   useEffect(() => {
-    const fetchRealPosts = async (retryWithoutToken = false) => {
+    const fetchRealPosts = async () => {
       try {
-        // Trang chủ có thể yêu cầu Token xác thực
-        const token = localStorage.getItem("userToken");
-        const headers =
-          token && !retryWithoutToken
-            ? { Authorization: `Bearer ${token}` }
-            : {};
-        // QUAN TRỌNG: Backend của bạn KHÔNG nhận page=0, bắt buộc page=1 trở lên (Lỗi 400 Bad Request)
-        const res = await axios.get("/api/posts?page=1&size=20", { headers });
-        const rawData = res.data?.content || res.data || [];
-
-        const fetchedRooms = Array.isArray(rawData)
-          ? rawData.map((p) => {
-              // Trích xuất hình ảnh thật nếu có
-              let imgUrl =
-                "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800";
-              if (p.images && p.images.length > 0) {
-                imgUrl = p.images[0].url || p.images[0].imageUrl || imgUrl;
-              }
-
-              return {
-                id: p.id,
-                title: p.title || "Phòng trọ",
-                price: (p.price || 0) / 1000000,
-                address: p.address || p.city || "Chưa cập nhật địa chỉ",
-                tag: p.roomType || "",
-                image: imgUrl,
-                planType: p.userPlan || p.plan || (p.user && p.user.plan) || "FREE",
-                isOwnerVerified: p.user?.isVerified || p.ownerVerified || false,
-              };
-            })
-          : [];
-        setRooms(fetchedRooms);
-      } catch (err) {
-        if (err.response?.status === 401 && !retryWithoutToken) {
-          // Nếu báo lỗi 401 do auth, thử lấy dữ liệu mà không cần token
-          fetchRealPosts(true);
-        } else {
-          setRooms([]);
-          console.error("Lỗi lấy bài đăng:", err);
-        }
+        await loadRooms({ endpoint: "/api/posts", params: {}, page: 1 });
+      } catch {
+        // loadRooms đã log lỗi và xử lý trạng thái
       }
     };
+
     fetchRealPosts();
-  }, [user]);
+  }, [user, loadRooms]);
 
-  const fetchNearbyRooms = async (lat, lng) => {
+  const fetchNearbyRooms = async (lat, lng, radius = searchRadius) => {
     try {
-      const token = localStorage.getItem("userToken");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(
-        `/api/posts/nearby?lat=${lat}&lng=${lng}&radius=2&page=1&size=20`,
-        { headers },
-      );
-
-      // Expand parsing to cover different result wrappers
-      let rawData = [];
-      if (Array.isArray(res.data)) rawData = res.data;
-      else if (Array.isArray(res.data?.content)) rawData = res.data.content;
-      else if (Array.isArray(res.data?.result)) rawData = res.data.result;
-      else if (Array.isArray(res.data?.data)) rawData = res.data.data;
-      else if (Array.isArray(res.data?.data?.content))
-        rawData = res.data.data.content;
-
-      console.log("Nearby API Response:", res.data);
-      console.log("Parsed Raw Data:", rawData);
-      const fetchedRooms = Array.isArray(rawData)
-        ? rawData.map((p) => {
-            let imgUrl =
-              "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800";
-            if (p.images && p.images.length > 0) {
-              imgUrl = p.images[0].url || p.images[0].imageUrl || imgUrl;
-            }
-            return {
-              id: p.id,
-              title: p.title || "Phòng trọ",
-              price: (p.price || 0) / 1000000, // Đổi sang triệu
-              address: p.address || p.city || "",
-              tag: p.roomType || "",
-              image: imgUrl,
-              planType:
-                p.userPlan || p.plan || (p.user && p.user.plan) || "FREE",
-            };
-          })
-        : [];
-
-      setRooms(fetchedRooms);
+      await loadRooms({
+        endpoint: "/api/posts/nearby",
+        params: { lat, lng, radius },
+        page: 1,
+      });
     } catch (err) {
       console.error("fetchNearbyRooms Error:", err);
       console.error("Response Data:", err.response?.data);
@@ -170,13 +227,53 @@ function MainApp() {
     }
   };
 
-  const GEOLOCATION_OPTIONS = {
-    enableHighAccuracy: false,
-    timeout: 7000,
-    maximumAge: 5 * 60 * 1000,
+  const buildPageRange = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const range = [1];
+    const left = Math.max(2, currentPage - 1);
+    const right = Math.min(totalPages - 1, currentPage + 1);
+
+    if (left > 2) {
+      range.push("start-ellipsis");
+    }
+
+    for (let page = left; page <= right; page += 1) {
+      range.push(page);
+    }
+
+    if (right < totalPages - 1) {
+      range.push("end-ellipsis");
+    }
+
+    range.push(totalPages);
+    return range;
   };
 
-  const handleGetLocation = () =>
+  const handlePageChange = async (page) => {
+    if (page < 1 || page === currentPage || isLoadingRooms) return;
+    if (totalPages && page > totalPages) return;
+
+    try {
+      await loadRooms({
+        endpoint: currentEndpoint,
+        params: currentParams,
+        page,
+      });
+    } catch {
+      // loadRooms đã xử lý lỗi và log
+    }
+  };
+
+  const GEOLOCATION_OPTIONS = {
+    enableHighAccuracy: true,
+    timeout: 12000,
+    maximumAge: 0,
+  };
+
+  const handleGetLocation = (radiusParam = searchRadius) =>
     enforceAuth(() => {
       setIsLocating(true);
       if (!navigator.geolocation) {
@@ -192,11 +289,9 @@ function MainApp() {
             JSON.stringify({ latitude, longitude, ts: Date.now() }),
           );
 
-          // Show coordinates immediately for faster feedback.
           setSearchTerm(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
           fetchNearbyRooms(latitude, longitude).finally(() => setIsLocating(false));
 
-          // Reverse geocoding runs in background to avoid blocking nearby search.
           (async () => {
             try {
               const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
@@ -208,17 +303,17 @@ function MainApp() {
               const formatted = res.data?.results?.[0]?.formatted_address;
               if (formatted) setSearchTerm(formatted);
             } catch {
-              // Keep coordinate text fallback.
+              // Keep coordinate fallback
             }
           })();
         },
         () => {
-          // GPS timeout/fail: fallback to recent cached location.
           try {
             const cached = JSON.parse(localStorage.getItem("lastKnownLocation") || "null");
-            if (cached?.latitude && cached?.longitude) {
+            const cacheAge = Date.now() - Number(cached?.ts || 0);
+            if (cached?.latitude && cached?.longitude && cacheAge <= 90 * 1000) {
               setSearchTerm(
-                `${Number(cached.latitude).toFixed(6)}, ${Number(cached.longitude).toFixed(6)}`
+                `${Number(cached.latitude).toFixed(6)}, ${Number(cached.longitude).toFixed(6)}`,
               );
               fetchNearbyRooms(cached.latitude, cached.longitude).finally(() =>
                 setIsLocating(false),
@@ -238,78 +333,48 @@ function MainApp() {
 
   const handleSearch = async () =>
     enforceAuth(() => {
-      // Generate query parameters based on filters
-      const queryParams = new URLSearchParams();
-      queryParams.append("page", "1");
-      // Tăng size lên 100 để bộ lọc cục bộ hoạt động tốt hơn
-      queryParams.append("size", "100");
-      if (searchTerm.trim()) queryParams.append("title", searchTerm.trim());
-      if (filters.minPrice) queryParams.append("minPrice", filters.minPrice);
-      if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
-      if (filters.roomType) queryParams.append("roomType", filters.roomType);
+      const searchParams = {};
+      if (searchTerm.trim()) searchParams.title = searchTerm.trim();
+      if (filters.minPrice) searchParams.minPrice = filters.minPrice;
+      if (filters.maxPrice) searchParams.maxPrice = filters.maxPrice;
+      if (filters.roomType) searchParams.roomType = filters.roomType;
 
-      const qs = queryParams.toString();
-
-      // Call standard search API
       const fetchSearch = async () => {
         try {
-          const token = localStorage.getItem("userToken");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const { items, meta } = await loadRooms({
+            endpoint: "/api/posts",
+            params: searchParams,
+            page: 1,
+          });
 
-          // Use GET /api/posts with all parameters (matches Swagger SearchRequest via query params)
-          const res = await axios.get(`/api/posts?${qs}`, { headers });
-          let rawData = [];
-          if (Array.isArray(res.data)) rawData = res.data;
-          else if (Array.isArray(res.data?.content)) rawData = res.data.content;
-          else if (Array.isArray(res.data?.result)) rawData = res.data.result;
-          else if (Array.isArray(res.data?.data)) rawData = res.data.data;
-          else if (Array.isArray(res.data?.data?.content))
-            rawData = res.data.data.content;
+          let resultRooms = items;
 
-          const fetchedRooms = Array.isArray(rawData)
-            ? rawData.map((p) => {
-                let imgUrl =
-                  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800";
-                if (p.images && p.images.length > 0) {
-                  imgUrl = p.images[0].url || p.images[0].imageUrl || imgUrl;
-                }
-                return {
-                  id: p.id,
-                  title: p.title || "Phòng trọ",
-                  price: (p.price || 0) / 1000000,
-                  address: p.address || p.city || "",
-                  tag: p.roomType || "",
-                  image: imgUrl,
-                  planType:
-                    p.userPlan || p.plan || (p.user && p.user.plan) || "FREE",
-                  amenities: Array.isArray(p.amenities) ? p.amenities : [], // Nhớ trích xuất mảng tiện ích
-                };
-              })
-            : [];
-
-          // Nếu người dùng chọn Tiện ích, ta bắt buộc phải LỌC CỤC BỘ (Local Filtering) ở Frontend
-          // Vì Backend xử lý param mảng tiện ích array không tốt (trả ra 0 kết quả).
-          let resultRooms = fetchedRooms;
           if (filters.amenities && filters.amenities.length > 0) {
             resultRooms = resultRooms.filter((room) => {
-              // Chuẩn hoá mảng tên tiện ích của phòng
-              const roomAmenities = room.amenities.map((a) =>
-                (a.type || a.name || a || "").toString().toLowerCase(),
+              const roomAmenities = new Set(
+                room.amenities.map((a) =>
+                  (a.type || a.name || a || "").toString().toLowerCase(),
+                ),
               );
 
-              // Kiểm tra: Hàm every() đảm bảo phòng đó phải có TẤT CẢ các tiện ích người dùng yêu cầu
-              return filters.amenities.every((selectedAminity) =>
-                roomAmenities.includes(selectedAminity.toLowerCase()),
+              return filters.amenities.every((selectedAmenity) =>
+                roomAmenities.has(selectedAmenity.toLowerCase()),
               );
             });
-          }
 
-          setRooms(resultRooms);
+            setRooms(resultRooms);
+            setTotalResults(resultRooms.length);
+            setHasMore(false);
+            setTotalPages(1);
+          } else {
+            setTotalResults(meta.totalItems ?? resultRooms.length);
+          }
         } catch (err) {
           console.error("Search API Error:", err);
           alert("Lỗi khi tìm kiếm, vui lòng thử lại!");
         }
       };
+
       fetchSearch();
     });
 
@@ -335,9 +400,7 @@ function MainApp() {
         onAdminClick={() => setIsAdminView(true)}
       />
 
-      {showAuth && (
-        <AuthPage mode={authMode} onBack={() => setShowAuth(false)} />
-      )}
+      {showAuth && <AuthPage mode={authMode} onBack={() => setShowAuth(false)} />}
       {showVerification && <VerificationModal onBack={() => setShowVerification(false)} />}
       {showAddRoom && <AddRoomForm onBack={() => setShowAddRoom(false)} />}
       {editingPost && (
@@ -345,7 +408,7 @@ function MainApp() {
           existingPost={editingPost}
           onBack={() => {
             setEditingPost(null);
-            setShowMyPosts(true); // Quay lại danh sách sau khi sửa
+            setShowMyPosts(true);
           }}
         />
       )}
@@ -362,17 +425,10 @@ function MainApp() {
           }}
         />
       )}
-      {showEditProfile && (
-        <EditProfileModal onBack={() => setShowEditProfile(false)} />
-      )}
-      {showPricing && (
-        <PurchasePlanModal onBack={() => setShowPricing(false)} />
-      )}
+      {showEditProfile && <EditProfileModal onBack={() => setShowEditProfile(false)} />}
+      {showPricing && <PurchasePlanModal onBack={() => setShowPricing(false)} />}
       {selectedRoomId && (
-        <RoomDetailModal
-          roomId={selectedRoomId}
-          onBack={() => setSelectedRoomId(null)}
-        />
+        <RoomDetailModal roomId={selectedRoomId} onBack={() => setSelectedRoomId(null)} />
       )}
       {showSavedPosts && (
         <SavedPostsModal
@@ -396,36 +452,100 @@ function MainApp() {
         isLocating={isLocating}
         filters={filters}
         setFilters={setFilters}
+        searchRadius={searchRadius}
+        setSearchRadius={setSearchRadius}
       />
 
       <main className="container mx-auto px-4 py-8 relative z-10">
         <div className="mb-10 flex items-end justify-between border-b border-gray-200 pb-5 text-gray-900 relative">
           <div>
-            <h2 className="text-3xl font-black tracking-tight mb-2">
-              Gợi ý phòng nổi bật
-            </h2>
-            <div className="w-24 h-1.5 bg-gradient-to-r from-rose-500 to-orange-400 rounded-full mb-[-23px]"></div>
+            <h2 className="text-3xl font-black tracking-tight mb-2">Gợi ý phòng nổi bật</h2>
+            <div className="w-24 h-1.5 bg-linear-to-r from-rose-500 to-orange-400 rounded-full -mb-6"></div>
           </div>
-          <span className="text-sm font-semibold text-rose-500 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">
-            Tìm thấy{" "}
-            <span className="font-black text-rose-600">{rooms.length}</span> kết
-            quả
-          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {user?.role === "LANDLORD" && (
-            <AddRoomCard onClick={() => setShowAddRoom(true)} />
-          )}
-          {rooms.map((room, index) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              index={index}
-              onClick={() => enforceAuth(() => setSelectedRoomId(room.id))}
-            />
-          ))}
-        </div>
+        {isLoadingRooms ? (
+          <div className="flex flex-col justify-center items-center py-32">
+            <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-rose-500 shadow-md"></div>
+            <p className="mt-4 text-gray-500 font-medium animate-pulse">Đang tìm kiếm phòng trọ tốt nhất...</p>
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="flex flex-col justify-center items-center py-24 text-center bg-white rounded-[2rem] border border-gray-100 shadow-xs">
+            <div className="w-24 h-24 mb-6 bg-linear-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center shadow-inner">
+              <Search className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy phòng nào</h3>
+            <p className="text-gray-500 max-w-md">Rất tiếc, không có bài đăng nào khớp với tìm kiếm của bạn. Vui lòng thử lại với các tiêu chí khác hoặc khu vực rộng hơn.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {user?.role === "LANDLORD" && <AddRoomCard onClick={() => setShowAddRoom(true)} />}
+            {rooms.map((room, index) => (
+              <RoomCard
+                key={room.id}
+                room={room}
+                index={index}
+                onClick={() => enforceAuth(() => setSelectedRoomId(room.id))}
+              />
+            ))}
+          </div>
+        )}
+
+        {(totalPages > 1 || hasMore) && !isLoadingRooms && rooms.length > 0 && (
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm font-medium text-gray-500">
+              Trang {currentPage} / {totalPages} · Tổng {totalResults} bài
+            </div>
+            <div className="mt-3 flex items-center gap-1 sm:mt-0">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              {totalPages > 1 &&
+                buildPageRange().map((pageNum, index) => {
+                  if (typeof pageNum === "string") {
+                    return (
+                      <span
+                        key={`${pageNum}-${index}`}
+                        className="inline-flex h-9 min-w-8 items-center justify-center rounded-lg border border-transparent bg-transparent text-sm text-gray-400"
+                      >
+                        …
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`h-9 min-w-8 rounded-lg border px-3 text-sm font-semibold transition ${
+                        pageNum === currentPage
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+              <button
+                type="button"
+                disabled={!hasMore}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />

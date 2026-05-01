@@ -75,7 +75,7 @@ const UploadBox = ({ label, hint, value, onChange, loading }) => (
 );
 
 const VerificationModal = ({ onBack }) => {
-  const { user } = useUser();
+  const { user, updateUser } = useUser();
   const token = localStorage.getItem("userToken");
 
   const [status, setStatus] = useState(null);   // trạng thái hiện tại
@@ -97,31 +97,50 @@ const VerificationModal = ({ onBack }) => {
     let isMounted = true;
     setStatus(null);
     setLoadingStatus(true);
-    
-    // Nếu user đã được verified từ trước (flag isVerified)
-    if (user?.isVerified) {
-      setStatus({ status: "APPROVED" });
+
+    if (!token) {
       setLoadingStatus(false);
       return;
     }
-    if (!token) { setLoadingStatus(false); return; }
-    axios.get("/api/verifications/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
+
+    const fetchStatus = async () => {
+      try {
+        // Refresh profile trước để tránh tình trạng "mới mở modal vẫn hiện chưa xác minh".
+        const meRes = await axios.get("/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const me = meRes.data?.result || meRes.data?.data || meRes.data;
+        const nextVerified = me?.isVerified || me?.is_verified || false;
+        if (isMounted) {
+          updateUser({ isVerified: nextVerified });
+        }
+        if (nextVerified) {
+          if (isMounted) setStatus({ status: "APPROVED" });
+          return;
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.warn("Không thể refresh profile xác minh:", err?.message);
+        }
+      }
+
+      try {
+        const res = await axios.get("/api/verifications/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!isMounted) return;
         const d = res.data?.result || res.data?.data || res.data;
         setStatus(d);
-      })
-      .catch(err => {
+      } catch (err) {
         if (!isMounted) return;
         if (err.response?.status !== 404) {
           console.error("Lỗi lấy trạng thái xác minh:", err);
         }
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) setLoadingStatus(false);
-      });
+      }
+    };
+    fetchStatus();
       
     return () => { isMounted = false; };
   // dùng user.id thay vì user để tránh loop vô hạn
@@ -141,7 +160,13 @@ const VerificationModal = ({ onBack }) => {
           "Content-Type": "multipart/form-data",
         },
       });
-      const publicId = res.data?.public_id || res.data?.publicId;
+      const payload = res.data?.result || res.data?.data || res.data || {};
+      const publicId =
+        payload.public_id ||
+        payload.publicId ||
+        payload.id ||
+        payload.fileId ||
+        payload.secure_url;
       if (!publicId) throw new Error("Không nhận được public_id từ server");
       setId(publicId);
     } catch (err) {
@@ -162,6 +187,10 @@ const VerificationModal = ({ onBack }) => {
       await axios.post("/api/verifications", {
         idCardFrontPublicId: frontId,
         idCardBackPublicId:  backId,
+        idCardFrontId: frontId,
+        idCardBackId: backId,
+        frontImagePublicId: frontId,
+        backImagePublicId: backId,
         note: note || null,
       }, {
         headers: { Authorization: `Bearer ${token}` }

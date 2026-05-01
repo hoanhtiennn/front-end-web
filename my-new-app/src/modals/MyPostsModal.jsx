@@ -96,19 +96,19 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-3xl bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-[fadeUp_0.3s_ease-out]">
+      <div className="relative w-full max-w-3xl bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-[fadeUp_0.3s_ease-out]">
 
         {/* Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 bg-rose-500/8 rounded-full blur-[60px] pointer-events-none" />
 
         {/* HEADER */}
-        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 shrink-0">
+        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
-              <Home className="w-4 h-4 text-rose-400" />
+            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center">
+              <Home className="w-4 h-4 text-rose-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white leading-tight">Bài đăng của tôi</h2>
+              <h2 className="text-lg font-bold text-gray-900 leading-tight">Bài đăng của tôi</h2>
               <p className="text-xs text-gray-500">
                 {loading ? "Đang tải..." : `${posts.length} bài đăng`}
               </p>
@@ -118,14 +118,14 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
             <button
               onClick={fetchMyPosts}
               disabled={loading}
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-40"
+              className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all disabled:opacity-40"
               title="Làm mới"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
             <button
               onClick={onBack}
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all"
+              className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -142,7 +142,7 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
             <span className="w-2 h-2 rounded-full bg-rose-400" />
             <span className="text-xs text-gray-400">Đã cho thuê</span>
           </div>
-          <span className="text-xs text-gray-600 ml-auto">Nhấn icon để đổi trạng thái</span>
+          <span className="text-xs text-gray-500 ml-auto">Nhấn icon để đổi trạng thái</span>
         </div>
 
         {/* CONTENT */}
@@ -173,7 +173,7 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
             posts.map((post) => (
               <div
                 key={post.id}
-                className="flex gap-4 bg-gray-900/60 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all group"
+                className="flex gap-4 bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-all group"
               >
                 {/* Thumbnail — click để xem chi tiết */}
                 <div
@@ -184,7 +184,7 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
                   <img
                     src={getImageUrl(post)}
                     alt={post.title}
-                    className="w-24 h-20 object-cover rounded-lg border border-gray-700 group-hover/thumb:opacity-80 transition-opacity"
+                    className="w-24 h-20 object-cover rounded-lg border border-gray-200 group-hover/thumb:opacity-80 transition-opacity"
                   />
                   {/* Status dot */}
                   <span className={`absolute top-1.5 left-1.5 w-2.5 h-2.5 rounded-full border-2 border-gray-900 ${
@@ -200,7 +200,7 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                   <div>
                     <h3
-                      className="text-sm font-bold text-white line-clamp-1 mb-0.5 hover:text-rose-300 cursor-pointer transition-colors"
+                      className="text-sm font-bold text-gray-900 line-clamp-1 mb-0.5 hover:text-rose-500 cursor-pointer transition-colors"
                       onClick={() => onViewPost && onViewPost(post.id)}
                     >
                       {post.title}
@@ -275,20 +275,20 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
 
         {/* CONFIRM DELETE OVERLAY */}
         {confirmDeleteId && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-2xl flex items-center justify-center p-6 z-10">
-            <div className="bg-[#0D1117] border border-gray-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-[fadeUp_0.2s_ease-out]">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center p-6 z-10">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-[fadeUp_0.2s_ease-out]">
               <div className="w-14 h-14 mx-auto mb-4 bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center">
                 <Trash2 className="w-6 h-6 text-red-400" />
               </div>
-              <h3 className="text-white font-bold text-lg mb-2">Xóa bài đăng?</h3>
-              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+              <h3 className="text-gray-900 font-bold text-lg mb-2">Xóa bài đăng?</h3>
+              <p className="text-gray-600 text-sm mb-6 leading-relaxed">
                 Hành động này <strong className="text-red-400">không thể hoàn tác</strong>. Bài đăng và toàn bộ hình ảnh sẽ bị xóa vĩnh viễn.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmDeleteId(null)}
                   disabled={deletingId === confirmDeleteId}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 transition-all disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-100 transition-all disabled:opacity-50"
                 >
                   Huỷ
                 </button>

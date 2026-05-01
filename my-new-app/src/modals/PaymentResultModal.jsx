@@ -41,13 +41,14 @@ export default function PaymentResultModal() {
               const meRes = await axios.get("/api/users/me", {
                 headers: { Authorization: `Bearer ${token}` }
               });
-              const u = meRes.data;
+              const u = meRes.data?.result || meRes.data?.data || meRes.data;
               updateUser({
                 plan:           u.plan,
                 remainingPosts: u.remainingPosts ?? u.remaining_posts ?? null,
-                name:           u.fullName   || u.full_name   || u.email?.split("@")[0],
-                avatarUrl:      u.avatar_url || u.avatarUrl,
+                name:           u.fullName || u.full_name || u.name || u.email?.split("@")[0],
+                avatarUrl:      u.avatar_url || u.avatarUrl || u.profilePicture || u.photo,
                 phone:          u.phone,
+                isVerified:     u.isVerified || u.is_verified || false,
               });
             } catch (_) {
               // Fallback: chỉ update plan nếu gọi API thất bại

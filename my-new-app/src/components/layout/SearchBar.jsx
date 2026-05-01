@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { MapPin, Settings2, Target, Search } from "lucide-react";
 
-const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLocating, filters, setFilters }) => {
+const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLocating, filters, setFilters, searchRadius, setSearchRadius }) => {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
@@ -8,7 +9,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
     <div className="max-w-4xl mx-auto flex flex-col gap-3 bg-white p-3 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300">
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex grow items-center gap-3 bg-gray-50/50 px-5 py-3 rounded-full focus-within:bg-white focus-within:ring-2 focus-within:ring-rose-500/50 transition-all duration-300">
-          <span className="text-xl">📍</span>
+          <MapPin className="text-gray-400" size={20} />
           <input 
             type="text" 
             placeholder="Bạn muốn tìm phòng ở đâu?" 
@@ -22,26 +23,48 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
           <button 
             type="button"
             onClick={() => setShowFilters(!showFilters)} 
-            className="flex items-center justify-center gap-2 rounded-2xl md:rounded-full bg-orange-50 px-6 py-4 text-orange-600 hover:bg-orange-100 hover:text-orange-700 font-bold transition-colors"
+            className="flex items-center justify-center gap-2 rounded-2xl md:rounded-full bg-gray-50 px-6 py-4 text-gray-600 hover:bg-gray-100 hover:text-gray-900 font-bold transition-colors border border-gray-100"
           >
-            <span className="text-lg">⚙️</span>
+            <Settings2 size={18} />
             <span className="hidden md:inline">Bộ lọc</span>
           </button>
-          <button 
-            type="button"
-            onClick={onLocationClick} 
-            disabled={isLocating}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 rounded-2xl md:rounded-full bg-gray-100 px-6 py-4 text-gray-700 hover:bg-gray-200 hover:text-gray-900 font-bold transition-colors disabled:opacity-50"
-          >
-            <span className="text-lg">🎯</span>
-            <span>{isLocating ? "Đang quét..." : "Gần tôi"}</span>
-          </button>
+          
+          <div className={`flex-1 md:flex-none flex items-center justify-center gap-2 rounded-2xl md:rounded-full border border-gray-200 bg-white px-4 py-2 text-gray-700 shadow-sm transition-all hover:border-gray-300 ${isLocating ? 'opacity-50' : ''}`}>
+            <button 
+              type="button" 
+              onClick={() => onLocationClick(searchRadius)}
+              disabled={isLocating}
+              className="p-1.5 hover:bg-rose-50 hover:text-rose-600 rounded-full transition-colors flex items-center justify-center text-gray-400"
+              title="Tìm quanh đây"
+            >
+              <Target size={20} className={isLocating ? "animate-pulse text-rose-500" : ""} />
+            </button>
+            <div className="flex flex-col justify-center w-28 pr-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{isLocating ? "Đang quét" : "Gần tôi"}</span>
+                <span className="text-[10px] font-bold text-rose-600">{searchRadius} km</span>
+              </div>
+              <input 
+                type="range" 
+                min="1" 
+                max="5" 
+                step="1"
+                value={searchRadius}
+                onChange={(e) => setSearchRadius(Number(e.target.value))}
+                onMouseUp={() => onLocationClick(searchRadius)}
+                onTouchEnd={() => onLocationClick(searchRadius)}
+                disabled={isLocating}
+                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+              />
+            </div>
+          </div>
           <button 
             type="button"
             onClick={onSearch}
-            className="hidden md:flex items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-10 py-4 text-base font-black text-white hover:shadow-lg hover:shadow-rose-500/40 hover:scale-105 transition-all duration-300"
+            className="hidden md:flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-8 py-4 text-sm font-black text-white hover:shadow-lg hover:shadow-rose-500/40 hover:scale-105 transition-all duration-300"
           >
-            🔍 TÌM KIẾM
+            <Search size={18} strokeWidth={2.5} /> 
+            TÌM KIẾM
           </button>
         </div>
       </div>

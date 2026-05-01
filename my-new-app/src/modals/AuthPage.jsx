@@ -77,8 +77,19 @@ const AuthPage = ({ mode, onBack }) => {
           localStorage.setItem("userToken", token);
           try {
             const profileRes = await axios.get("/api/users/me", { headers: { Authorization: `Bearer ${token}` } });
-            const u = profileRes.data;
-            login({ id: u.id, name: u.fullName || u.full_name || u.email?.split("@")[0], email: u.email, phone: u.phone, role: u.role, plan: u.plan, avatarUrl: u.avatar_url || u.avatarUrl, token });
+            const u = profileRes.data?.result || profileRes.data?.data || profileRes.data;
+            login({
+              id: u.id,
+              name: u.fullName || u.full_name || u.name || u.email?.split("@")[0],
+              email: u.email,
+              phone: u.phone,
+              role: u.role,
+              plan: u.plan,
+              avatarUrl: u.avatar_url || u.avatarUrl || u.profilePicture || u.photo,
+              isVerified: u.isVerified || u.is_verified || false,
+              remainingPosts: u.remainingPosts ?? u.remaining_posts ?? null,
+              token,
+            });
           } catch (e) {
             login({ name: userName, role: userRole, token });
           }
@@ -107,8 +118,19 @@ const AuthPage = ({ mode, onBack }) => {
           localStorage.setItem("userToken", token);
           try {
             const profileRes = await axios.get("/api/users/me", { headers: { Authorization: `Bearer ${token}` } });
-            const u = profileRes.data;
-            login({ id: u.id, name: u.fullName || u.full_name || u.email?.split("@")[0], email: u.email, phone: u.phone, role: u.role, plan: u.plan, avatarUrl: u.avatar_url || u.avatarUrl, token });
+            const u = profileRes.data?.result || profileRes.data?.data || profileRes.data;
+            login({
+              id: u.id,
+              name: u.fullName || u.full_name || u.name || u.email?.split("@")[0],
+              email: u.email,
+              phone: u.phone,
+              role: u.role,
+              plan: u.plan,
+              avatarUrl: u.avatar_url || u.avatarUrl || u.profilePicture || u.photo,
+              isVerified: u.isVerified || u.is_verified || false,
+              remainingPosts: u.remainingPosts ?? u.remaining_posts ?? null,
+              token,
+            });
           } catch (e) {
             login({ name: userName, role: userRole, token });
           }
@@ -153,8 +175,19 @@ const AuthPage = ({ mode, onBack }) => {
         localStorage.setItem("userToken", token);
         try {
           const profileRes = await axios.get("/api/users/me", { headers: { Authorization: `Bearer ${token}` } });
-          const u = profileRes.data;
-          login({ id: u.id, name: u.fullName || u.full_name || u.email?.split("@")[0], email: u.email, phone: u.phone, role: u.role, plan: u.plan, avatarUrl: u.avatar_url || u.avatarUrl, token });
+          const u = profileRes.data?.result || profileRes.data?.data || profileRes.data;
+          login({
+            id: u.id,
+            name: u.fullName || u.full_name || u.name || u.email?.split("@")[0],
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            plan: u.plan,
+            avatarUrl: u.avatar_url || u.avatarUrl || u.profilePicture || u.photo,
+            isVerified: u.isVerified || u.is_verified || false,
+            remainingPosts: u.remainingPosts ?? u.remaining_posts ?? null,
+            token,
+          });
         } catch (e) {
           login({ name: userName, role: userRole, token });
         }
