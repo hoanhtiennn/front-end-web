@@ -5,66 +5,66 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-  <section className="container mx-auto px-4 -mt-16 md:-mt-20 relative z-20 mb-16">
-    <div className="max-w-4xl mx-auto flex flex-col gap-3 bg-white p-3 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-gray-100 transition-all duration-300">
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="flex grow items-center gap-3 bg-gray-50/50 px-5 py-3 rounded-full focus-within:bg-white focus-within:ring-2 focus-within:ring-rose-500/50 transition-all duration-300">
-          <MapPin className="text-gray-400" size={20} />
+  <section className="container mx-auto px-4 -mt-16 md:-mt-12 relative z-20 mb-16">
+    <div className="max-w-4xl mx-auto flex flex-col gap-2 bg-white p-2 md:p-2.5 rounded-3xl md:rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300">
+      <div className="flex flex-col md:flex-row items-center gap-2">
+        <div className="flex grow items-center gap-3 w-full px-4 py-2 rounded-full focus-within:bg-gray-50 transition-all duration-300">
+          <MapPin className="text-gray-400 shrink-0" size={20} />
           <input 
             type="text" 
             placeholder="Bạn muốn tìm phòng ở đâu?" 
-            className="w-full bg-transparent outline-none text-gray-900 font-semibold placeholder-gray-400 text-base"
+            className="w-full bg-transparent outline-none text-gray-900 font-semibold placeholder-gray-400 text-sm md:text-base"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSearch()}
           />
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap md:flex-nowrap items-center justify-center md:justify-end gap-2 w-full md:w-auto shrink-0">
           <button 
             type="button"
             onClick={() => setShowFilters(!showFilters)} 
-            className="flex items-center justify-center gap-2 rounded-2xl md:rounded-full bg-gray-50 px-6 py-4 text-gray-600 hover:bg-gray-100 hover:text-gray-900 font-bold transition-colors border border-gray-100"
+            className="flex items-center justify-center gap-2 shrink-0 rounded-full bg-gray-50 px-5 py-2.5 text-gray-700 hover:bg-gray-100 font-bold transition-colors"
           >
-            <Settings2 size={18} />
-            <span className="hidden md:inline">Bộ lọc</span>
+            <Settings2 size={16} />
+            <span className="text-sm">Bộ lọc</span>
           </button>
           
-          <div className={`flex-1 md:flex-none flex items-center justify-center gap-2 rounded-2xl md:rounded-full border border-gray-200 bg-white px-4 py-2 text-gray-700 shadow-sm transition-all hover:border-gray-300 ${isLocating ? 'opacity-50' : ''}`}>
+          <div className={`flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white p-1 pr-4 shadow-sm transition-all hover:border-gray-300 ${isLocating ? 'opacity-50' : ''}`}>
             <button 
               type="button" 
               onClick={() => onLocationClick(searchRadius)}
               disabled={isLocating}
-              className="p-1.5 hover:bg-rose-50 hover:text-rose-600 rounded-full transition-colors flex items-center justify-center text-gray-400"
+              className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center shrink-0 ${isLocating ? "bg-rose-100 text-rose-600" : "bg-rose-50 text-rose-500 hover:bg-rose-100"}`}
               title="Tìm quanh đây"
             >
-              <Target size={20} className={isLocating ? "animate-pulse text-rose-500" : ""} />
+              <Target size={16} className={isLocating ? "animate-pulse" : ""} />
             </button>
-            <div className="flex flex-col justify-center w-28 pr-2">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{isLocating ? "Đang quét" : "Gần tôi"}</span>
-                <span className="text-[10px] font-bold text-rose-600">{searchRadius} km</span>
-              </div>
-              <input 
-                type="range" 
-                min="1" 
-                max="5" 
-                step="1"
-                value={searchRadius}
-                onChange={(e) => setSearchRadius(Number(e.target.value))}
-                onMouseUp={() => onLocationClick(searchRadius)}
-                onTouchEnd={() => onLocationClick(searchRadius)}
-                disabled={isLocating}
-                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-              />
-            </div>
+            <span className="text-xs font-bold text-gray-800 uppercase tracking-wide">
+              {isLocating ? "Đang quét" : "Gần tôi"}
+            </span>
+            <input 
+              type="range" 
+              min="1" 
+              max="5" 
+              step="1"
+              value={searchRadius}
+              onChange={(e) => setSearchRadius(Number(e.target.value))}
+              onMouseUp={() => onLocationClick(searchRadius)}
+              onTouchEnd={() => onLocationClick(searchRadius)}
+              disabled={isLocating}
+              className="w-20 md:w-24 lg:w-32 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-rose-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-rose-500 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-md"
+            />
+            <span className="text-sm font-bold text-rose-500 text-right min-w-[28px]">
+              {searchRadius} km
+            </span>
           </div>
           <button 
             type="button"
             onClick={onSearch}
-            className="hidden md:flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-8 py-4 text-sm font-black text-white hover:shadow-lg hover:shadow-rose-500/40 hover:scale-105 transition-all duration-300"
+            className="flex items-center justify-center gap-2 shrink-0 rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-6 py-2.5 text-sm font-black text-white hover:shadow-lg hover:shadow-rose-500/40 hover:scale-105 transition-all duration-300"
           >
-            <Search size={18} strokeWidth={2.5} /> 
-            TÌM KIẾM
+            <Search size={16} strokeWidth={2.5} /> 
+            <span className="hidden md:inline">TÌM KIẾM</span>
           </button>
         </div>
       </div>
