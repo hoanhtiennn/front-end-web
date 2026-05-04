@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle2, XCircle, Loader2, ArrowRight, Home } from "lucide-react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 
 const AUTO_REDIRECT_SECONDS = 5;
 

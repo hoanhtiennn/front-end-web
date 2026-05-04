@@ -5,8 +5,8 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-  <section className="container mx-auto px-4 -mt-16 md:-mt-12 relative z-20 mb-16">
-    <div className="max-w-4xl mx-auto flex flex-col gap-2 bg-white p-2 md:p-2.5 rounded-3xl md:rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 transition-all duration-300">
+  <section className="container mx-auto px-4 -mt-16 md:-mt-12 relative z-20 mb-8">
+    <div className={`max-w-4xl mx-auto flex flex-col gap-2 bg-white p-2 md:p-2.5 shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 ${showFilters ? 'rounded-3xl' : 'rounded-3xl md:rounded-full'}`}>
       <div className="flex flex-col md:flex-row items-center gap-2">
         <div className="flex grow items-center gap-3 w-full px-4 py-2 rounded-full focus-within:bg-gray-50 transition-all duration-300">
           <MapPin className="text-gray-400 shrink-0" size={20} />
@@ -23,7 +23,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
           <button 
             type="button"
             onClick={() => setShowFilters(!showFilters)} 
-            className="flex items-center justify-center gap-2 shrink-0 rounded-full bg-gray-50 px-5 py-2.5 text-gray-700 hover:bg-gray-100 font-bold transition-colors"
+            className={`flex items-center justify-center gap-2 shrink-0 rounded-full px-5 py-2.5 font-bold transition-colors ${showFilters ? 'bg-rose-100 text-rose-600' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
           >
             <Settings2 size={16} />
             <span className="text-sm">Bộ lọc</span>
@@ -70,7 +70,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
       </div>
 
       {showFilters && (
-        <div className="flex flex-col gap-4 px-2 py-3 border-t border-gray-100 mt-2 fade-in">
+        <div className="flex flex-col gap-4 px-4 py-3 border-t border-gray-100 mt-2 fade-in">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 flex flex-col gap-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Loại phòng</label>
@@ -134,7 +134,7 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
             </div>
           </div>
           
-          <button type="button" onClick={onSearch} className="md:hidden mt-2 flex items-center justify-center rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-3 text-sm font-black text-white hover:shadow-lg transition-all">
+          <button type="button" onClick={onSearch} className="md:hidden mt-2 flex items-center justify-center rounded-xl bg-linear-to-r from-rose-500 to-orange-500 px-6 py-3 text-sm font-black text-white hover:shadow-lg transition-all">
             ÁP DỤNG LỌC
           </button>
         </div>

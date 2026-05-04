@@ -15,7 +15,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 import { toggleSavePost, isPostSaved } from "./SavedPostsModal";
 
 // ──────────────────────────────────────────────

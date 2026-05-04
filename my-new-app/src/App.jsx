@@ -1,22 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { UserProvider, useUser } from "./contexts/UserContext";
+import { UserProvider, useUser } from "./context/UserContext";
 import Navbar from "./components/Navbar";
-import Hero from "./components/layout/Hero";
-import SearchBar from "./components/layout/SearchBar";
-import Footer from "./components/layout/Footer";
+import Hero from "./layout/Hero";
+import SearchBar from "./layout/SearchBar";
+import Footer from "./layout/Footer";
 import RoomCard from "./components/RoomCard";
 import AddRoomCard from "./components/AddRoomCard";
-import AuthPage from "./modals/AuthPage";
-import AddRoomForm from "./modals/AddRoomForm";
-import EditProfileModal from "./modals/EditProfileModal";
-import PurchasePlanModal from "./modals/PurchasePlanModal";
-import RoomDetailModal from "./modals/RoomDetailModal";
-import PaymentResultModal from "./modals/PaymentResultModal";
-import MyPostsModal from "./modals/MyPostsModal";
-import SavedPostsModal from "./modals/SavedPostsModal";
-import VerificationModal from "./modals/VerificationModal";
+import AuthPage from "./features/modals/AuthPage";
+import AddRoomForm from "./features/modals/AddRoomForm";
+import EditProfileModal from "./features/modals/EditProfileModal";
+import PurchasePlanModal from "./features/modals/PurchasePlanModal";
+import RoomDetailModal from "./features/modals/RoomDetailModal";
+import PaymentResultModal from "./features/modals/PaymentResultModal";
+import MyPostsModal from "./features/modals/MyPostsModal";
+import SavedPostsModal from "./features/modals/SavedPostsModal";
+import VerificationModal from "./features/modals/VerificationModal";
 import AdminApp from "./pages/admin/AdminApp";
 
 function MainApp() {
@@ -50,7 +50,7 @@ function MainApp() {
   const [currentParams, setCurrentParams] = useState({});
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
-  const DEFAULT_PAGE_SIZE = 20;
+  const DEFAULT_PAGE_SIZE = 16;
 
   const isPaymentReturn = new URLSearchParams(window.location.search).has(
     "vnp_ResponseCode",
@@ -82,7 +82,8 @@ function MainApp() {
     const totalPagesRaw = root.totalPages ?? root.page?.totalPages;
     const totalPages = Number(totalPagesRaw);
     const hasTotalPages = Number.isFinite(totalPages) && totalPages > 0;
-    const totalItems = root.totalElements ?? root.totalItems ?? root.page?.totalElements;
+    const totalItems =
+      root.totalElements ?? root.totalItems ?? root.page?.totalElements;
 
     const hasNextRaw = root.hasNext ?? root.page?.hasNext;
     const hasNextBoolean =
@@ -91,14 +92,22 @@ function MainApp() {
         : root.last === false || root.page?.last === false;
 
     if (typeof hasNextBoolean === "boolean") {
-      return { hasMore: hasNextBoolean, totalPages: hasTotalPages ? totalPages : undefined, totalItems };
+      return {
+        hasMore: hasNextBoolean,
+        totalPages: hasTotalPages ? totalPages : undefined,
+        totalItems,
+      };
     }
 
     if (hasTotalPages) {
       return { hasMore: currentPage < totalPages, totalPages, totalItems };
     }
 
-    return { hasMore: currentItemsCount >= pageSize, totalPages: hasTotalPages ? totalPages : undefined, totalItems };
+    return {
+      hasMore: currentItemsCount >= pageSize,
+      totalPages: hasTotalPages ? totalPages : undefined,
+      totalItems,
+    };
   };
 
   const mapPostToRoom = (p) => {
@@ -121,73 +130,78 @@ function MainApp() {
     };
   };
 
-  const fetchPostsPage = useCallback(async ({
-    endpoint,
-    headers,
-    params = {},
-    page = 1,
-    pageSize = DEFAULT_PAGE_SIZE,
-  }) => {
-    const query = new URLSearchParams({
-      ...params,
-      page: String(page),
-      size: String(pageSize),
-    });
-
-    const res = await axios.get(`${endpoint}?${query.toString()}`, { headers });
-    const items = extractList(res.data);
-    const meta = parseMeta(res.data, page, pageSize, items.length);
-
-    return { items, meta };
-  }, [DEFAULT_PAGE_SIZE]);
-
-  const loadRooms = useCallback(async ({
-    endpoint,
-    params = {},
-    page = 1,
-    retryWithoutToken = false,
-  }) => {
-    try {
-      setIsLoadingRooms(true);
-
-      const token = localStorage.getItem("userToken");
-      const headers =
-        token && !retryWithoutToken ? { Authorization: `Bearer ${token}` } : {};
-
-      const { items, meta } = await fetchPostsPage({
-        endpoint,
-        headers,
-        params,
-        page,
+  const fetchPostsPage = useCallback(
+    async ({
+      endpoint,
+      headers,
+      params = {},
+      page = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+    }) => {
+      const query = new URLSearchParams({
+        ...params,
+        page: String(page),
+        size: String(pageSize),
       });
 
-      const mappedRooms = items.map(mapPostToRoom);
+      const res = await axios.get(`${endpoint}?${query.toString()}`, {
+        headers,
+      });
+      const items = extractList(res.data);
+      const meta = parseMeta(res.data, page, pageSize, items.length);
 
-      setRooms(mappedRooms);
-      setCurrentPage(page);
-      setTotalPages(meta.totalPages ?? 1);
-      setTotalResults(meta.totalItems ?? mappedRooms.length);
-      setHasMore(meta.hasMore);
-      setCurrentEndpoint(endpoint);
-      setCurrentParams(params);
+      return { items, meta };
+    },
+    [DEFAULT_PAGE_SIZE],
+  );
 
-      return { items: mappedRooms, meta };
-    } catch (err) {
-      if (err.response?.status === 401 && !retryWithoutToken) {
-        return loadRooms({ endpoint, params, page, retryWithoutToken: true });
+  const loadRooms = useCallback(
+    async ({ endpoint, params = {}, page = 1, retryWithoutToken = false }) => {
+      try {
+        setIsLoadingRooms(true);
+
+        const token = localStorage.getItem("userToken");
+        const headers =
+          token && !retryWithoutToken
+            ? { Authorization: `Bearer ${token}` }
+            : {};
+
+        const { items, meta } = await fetchPostsPage({
+          endpoint,
+          headers,
+          params,
+          page,
+        });
+
+        const mappedRooms = items.map(mapPostToRoom);
+
+        setRooms(mappedRooms);
+        setCurrentPage(page);
+        setTotalPages(meta.totalPages ?? 1);
+        setTotalResults(meta.totalItems ?? mappedRooms.length);
+        setHasMore(meta.hasMore);
+        setCurrentEndpoint(endpoint);
+        setCurrentParams(params);
+
+        return { items: mappedRooms, meta };
+      } catch (err) {
+        if (err.response?.status === 401 && !retryWithoutToken) {
+          return loadRooms({ endpoint, params, page, retryWithoutToken: true });
+        }
+
+        setRooms([]);
+        setHasMore(false);
+        setTotalPages(1);
+        setTotalResults(0);
+
+        console.error("Lỗi lấy bài đăng:", err);
+        throw err;
+      } finally {
+        setIsLoadingRooms(false);
       }
-
-      setRooms([]);
-      setHasMore(false);
-      setTotalPages(1);
-      setTotalResults(0);
-
-      console.error("Lỗi lấy bài đăng:", err);
-      throw err;
-    } finally {
-      setIsLoadingRooms(false);
-    }
-  }, [fetchPostsPage]);
+    },
+    [fetchPostsPage],
+  );
 
   useEffect(() => {
     const fetchRealPosts = async () => {
@@ -290,7 +304,9 @@ function MainApp() {
           );
 
           setSearchTerm(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-          fetchNearbyRooms(latitude, longitude).finally(() => setIsLocating(false));
+          fetchNearbyRooms(latitude, longitude).finally(() =>
+            setIsLocating(false),
+          );
 
           (async () => {
             try {
@@ -309,9 +325,15 @@ function MainApp() {
         },
         () => {
           try {
-            const cached = JSON.parse(localStorage.getItem("lastKnownLocation") || "null");
+            const cached = JSON.parse(
+              localStorage.getItem("lastKnownLocation") || "null",
+            );
             const cacheAge = Date.now() - Number(cached?.ts || 0);
-            if (cached?.latitude && cached?.longitude && cacheAge <= 90 * 1000) {
+            if (
+              cached?.latitude &&
+              cached?.longitude &&
+              cacheAge <= 90 * 1000
+            ) {
               setSearchTerm(
                 `${Number(cached.latitude).toFixed(6)}, ${Number(cached.longitude).toFixed(6)}`,
               );
@@ -383,7 +405,7 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans overflow-x-hidden">
       <Navbar
         onAuthClick={(mode) => {
           setAuthMode(mode);
@@ -400,8 +422,12 @@ function MainApp() {
         onAdminClick={() => setIsAdminView(true)}
       />
 
-      {showAuth && <AuthPage mode={authMode} onBack={() => setShowAuth(false)} />}
-      {showVerification && <VerificationModal onBack={() => setShowVerification(false)} />}
+      {showAuth && (
+        <AuthPage mode={authMode} onBack={() => setShowAuth(false)} />
+      )}
+      {showVerification && (
+        <VerificationModal onBack={() => setShowVerification(false)} />
+      )}
       {showAddRoom && <AddRoomForm onBack={() => setShowAddRoom(false)} />}
       {editingPost && (
         <AddRoomForm
@@ -425,10 +451,17 @@ function MainApp() {
           }}
         />
       )}
-      {showEditProfile && <EditProfileModal onBack={() => setShowEditProfile(false)} />}
-      {showPricing && <PurchasePlanModal onBack={() => setShowPricing(false)} />}
+      {showEditProfile && (
+        <EditProfileModal onBack={() => setShowEditProfile(false)} />
+      )}
+      {showPricing && (
+        <PurchasePlanModal onBack={() => setShowPricing(false)} />
+      )}
       {selectedRoomId && (
-        <RoomDetailModal roomId={selectedRoomId} onBack={() => setSelectedRoomId(null)} />
+        <RoomDetailModal
+          roomId={selectedRoomId}
+          onBack={() => setSelectedRoomId(null)}
+        />
       )}
       {showSavedPosts && (
         <SavedPostsModal
@@ -457,9 +490,11 @@ function MainApp() {
       />
 
       <main className="container mx-auto px-4 py-8 relative z-10">
-        <div className="mb-10 flex items-end justify-between border-b border-gray-200 pb-5 text-gray-900 relative">
+        <div className="mb-6 flex items-end justify-between border-b border-gray-200 pb-5 text-gray-900 relative">
           <div>
-            <h2 className="text-3xl font-black tracking-tight mb-2">Gợi ý phòng nổi bật</h2>
+            <h2 className="text-3xl font-black tracking-tight mb-2">
+              Gợi ý phòng nổi bật
+            </h2>
             <div className="w-24 h-1.5 bg-linear-to-r from-rose-500 to-orange-400 rounded-full -mb-6"></div>
           </div>
         </div>
@@ -467,19 +502,28 @@ function MainApp() {
         {isLoadingRooms ? (
           <div className="flex flex-col justify-center items-center py-32">
             <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-rose-500 shadow-md"></div>
-            <p className="mt-4 text-gray-500 font-medium animate-pulse">Đang tìm kiếm phòng trọ tốt nhất...</p>
+            <p className="mt-4 text-gray-500 font-medium animate-pulse">
+              Đang tìm kiếm phòng trọ tốt nhất...
+            </p>
           </div>
         ) : rooms.length === 0 ? (
           <div className="flex flex-col justify-center items-center py-24 text-center bg-white rounded-[2rem] border border-gray-100 shadow-xs">
             <div className="w-24 h-24 mb-6 bg-linear-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center shadow-inner">
               <Search className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy phòng nào</h3>
-            <p className="text-gray-500 max-w-md">Rất tiếc, không có bài đăng nào khớp với tìm kiếm của bạn. Vui lòng thử lại với các tiêu chí khác hoặc khu vực rộng hơn.</p>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              Không tìm thấy phòng nào
+            </h3>
+            <p className="text-gray-500 max-w-md">
+              Rất tiếc, không có bài đăng nào khớp với tìm kiếm của bạn. Vui
+              lòng thử lại với các tiêu chí khác hoặc khu vực rộng hơn.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {user?.role === "LANDLORD" && <AddRoomCard onClick={() => setShowAddRoom(true)} />}
+            {user?.role === "LANDLORD" && (
+              <AddRoomCard onClick={() => setShowAddRoom(true)} />
+            )}
             {rooms.map((room, index) => (
               <RoomCard
                 key={room.id}

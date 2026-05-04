@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 import { X, Camera, User, Phone, Mail, Lock, Trash2, ShieldAlert, Save, RotateCcw, Eye, EyeOff } from "lucide-react";
 
 const PLAN_BADGE = {
@@ -21,7 +21,7 @@ const InputField = ({ icon: Icon, label, note, ...props }) => (
       )}
       <input
         className={`w-full bg-white border border-gray-300 rounded-xl py-3 pr-4 text-sm text-gray-800 placeholder-gray-400
-          focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all
+          focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 transition-all
           disabled:opacity-40 disabled:cursor-not-allowed
           ${Icon ? "pl-10" : "pl-4"}`}
         {...props}
@@ -136,7 +136,7 @@ const EditProfileModal = ({ onBack }) => {
       <div className="relative w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden animate-[fadeUp_0.3s_ease-out]">
 
         {/* Subtle top glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-cyan-300/30 rounded-full blur-[60px] pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-rose-300/30 rounded-full blur-[60px] pointer-events-none" />
 
         {/* Header */}
         <div className="relative flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-200">
@@ -202,7 +202,7 @@ const EditProfileModal = ({ onBack }) => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-cyan-500 hover:bg-cyan-400 rounded-full flex items-center justify-center shadow-lg transition-all"
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-rose-500 hover:bg-rose-400 rounded-full flex items-center justify-center shadow-lg transition-all"
                   >
                     <Camera className="w-3 h-3 text-white" />
                   </button>
@@ -254,7 +254,7 @@ const EditProfileModal = ({ onBack }) => {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Bỏ trống nếu không muốn đổi"
-                    className="w-full bg-white border border-gray-300 rounded-xl py-3 pl-10 pr-11 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 transition-all"
+                    className="w-full bg-white border border-gray-300 rounded-xl py-3 pl-10 pr-11 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 transition-all"
                   />
                   <button
                     type="button"
@@ -282,13 +282,13 @@ const EditProfileModal = ({ onBack }) => {
               <div className="flex gap-3 pt-1">
                 <button
                   type="button" onClick={onBack} disabled={loading}
-                  className="w-1/3 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-100 hover:text-gray-900 transition-all disabled:opacity-50"
+                  className="w-1/3 py-2.5 rounded-xl border border-red-500 text-red-500 font-bold text-sm hover:bg-red-50 transition-all disabled:opacity-50"
                 >
                   Huỷ
                 </button>
                 <button
                   type="submit" disabled={loading}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:shadow-[0_0_25px_rgba(6,182,212,0.45)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-linear-to-r from-rose-500 to-orange-500 hover:opacity-90 text-white font-bold text-sm shadow-[0_8px_20px_rgba(244,63,94,0.2)] hover:shadow-[0_8px_25px_rgba(244,63,94,0.3)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   {loading ? "Đang lưu..." : "Lưu thay đổi"}

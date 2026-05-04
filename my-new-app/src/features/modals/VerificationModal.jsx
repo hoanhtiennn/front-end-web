@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 import {
   X, Upload, CheckCircle2, Clock, XCircle,
   ShieldCheck, AlertTriangle, Loader2, FileText, Image
@@ -9,29 +9,29 @@ import {
 const STATUS_CONFIG = {
   PENDING: {
     icon: Clock,
-    color: "text-amber-400",
-    bg: "bg-amber-500/10 border-amber-500/30",
+    color: "text-amber-500",
+    bg: "bg-amber-50 border-amber-200",
     label: "Đang chờ xử lý tự động...",
     desc: "Hệ thống AI đang xác minh CCCD của bạn"
   },
   PENDING_MANUAL: {
     icon: Clock,
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/30",
+    color: "text-blue-500",
+    bg: "bg-blue-50 border-blue-200",
     label: "Chờ admin xét duyệt",
     desc: "Hệ thống đã chuyển sang xét duyệt thủ công"
   },
   APPROVED: {
     icon: CheckCircle2,
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10 border-emerald-500/30",
+    color: "text-emerald-500",
+    bg: "bg-emerald-50 border-emerald-200",
     label: "Đã xác minh thành công ✅",
     desc: "Tài khoản của bạn đã được xác minh danh tính"
   },
   REJECTED: {
     icon: XCircle,
-    color: "text-rose-400",
-    bg: "bg-rose-500/10 border-rose-500/30",
+    color: "text-rose-500",
+    bg: "bg-rose-50 border-rose-200",
     label: "Bị từ chối",
     desc: ""
   },
@@ -39,28 +39,28 @@ const STATUS_CONFIG = {
 
 const UploadBox = ({ label, hint, value, onChange, loading }) => (
   <div className="space-y-2">
-    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">{label}</label>
+    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</label>
     <label className={`flex flex-col items-center justify-center w-full min-h-[120px] border-2 rounded-xl cursor-pointer transition-all ${
       value
-        ? "border-violet-500/50 bg-violet-500/5"
-        : "border-gray-700 border-dashed bg-gray-900/40 hover:border-gray-500 hover:bg-gray-900/60"
+        ? "border-emerald-400/50 bg-emerald-50"
+        : "border-gray-200 border-dashed bg-gray-50 hover:border-gray-300 hover:bg-gray-100"
     } ${loading ? "opacity-50 pointer-events-none" : ""}`}>
       {loading ? (
         <div className="flex flex-col items-center gap-2 py-6">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
           <p className="text-xs text-gray-500">Đang upload...</p>
         </div>
       ) : value ? (
         <div className="flex flex-col items-center gap-2 py-5">
-          <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-          <p className="text-xs text-emerald-400 font-semibold">Đã upload thành công</p>
-          <p className="text-[10px] text-gray-600 px-3 text-center break-all">{value}</p>
+          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+          <p className="text-xs text-emerald-600 font-semibold">Đã upload thành công</p>
+          <p className="text-[10px] text-gray-500 px-3 text-center break-all">{value}</p>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2 py-6 text-gray-500">
-          <Image className="w-8 h-8 text-gray-600" />
-          <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
-          <p className="text-[11px] text-gray-600">{hint}</p>
+          <Image className="w-8 h-8 text-gray-400" />
+          <p className="text-sm font-medium text-gray-700">Nhấn để chọn ảnh</p>
+          <p className="text-[11px] text-gray-500">{hint}</p>
         </div>
       )}
       <input
@@ -213,17 +213,17 @@ const VerificationModal = ({ onBack }) => {
 
   // SUCCESS SCREEN
   if (success) return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm bg-[#0D1117] border border-gray-800 rounded-2xl p-8 text-center animate-[fadeUp_0.4s_ease-out]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm bg-white border border-gray-100 shadow-2xl rounded-3xl p-8 text-center animate-[fadeUp_0.4s_ease-out]">
         <div className="relative w-20 h-20 mx-auto mb-5">
-          <div className="absolute inset-0 bg-violet-500/20 rounded-full blur-xl animate-pulse" />
-          <div className="relative w-20 h-20 bg-violet-500/10 rounded-full border border-violet-500/30 flex items-center justify-center">
-            <ShieldCheck className="w-10 h-10 text-violet-400" />
+          <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
+          <div className="relative w-20 h-20 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center">
+            <ShieldCheck className="w-10 h-10 text-emerald-500" />
           </div>
         </div>
-        <h2 className="text-2xl font-black text-white mb-2">Đã gửi xác minh!</h2>
-        <p className="text-gray-400 text-sm">Hệ thống AI đang xử lý. Bạn sẽ nhận email thông báo kết quả.</p>
-        <button onClick={onBack} className="mt-6 w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold transition-all">
+        <h2 className="text-2xl font-black text-gray-900 mb-2">Đã gửi xác minh!</h2>
+        <p className="text-gray-500 text-sm">Hệ thống AI đang xử lý. Bạn sẽ nhận email thông báo kết quả.</p>
+        <button onClick={onBack} className="mt-6 w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold transition-all">
           Đóng
         </button>
       </div>
@@ -232,29 +232,26 @@ const VerificationModal = ({ onBack }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-lg bg-[#0D1117] border border-gray-800 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] animate-[fadeUp_0.3s_ease-out]">
-
-        {/* Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-20 bg-violet-500/8 rounded-full blur-[60px] pointer-events-none" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col max-h-[92vh] animate-[fadeUp_0.3s_ease-out] overflow-hidden">
 
         {/* HEADER */}
-        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 shrink-0">
+        <div className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 bg-white z-10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-violet-400" />
+            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-rose-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white leading-tight">Xác minh CCCD</h2>
+              <h2 className="text-lg font-bold text-gray-900 leading-tight">Xác minh CCCD</h2>
               <p className="text-xs text-gray-500">Tăng độ tin cậy cho tài khoản chủ trọ</p>
             </div>
           </div>
-          <button onClick={onBack} className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all">
+          <button onClick={onBack} className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 bg-white z-0">
 
           {/* Trạng thái hiện tại */}
           {loadingStatus ? (
@@ -265,15 +262,15 @@ const VerificationModal = ({ onBack }) => {
             const cfg = STATUS_CONFIG[status.status] || STATUS_CONFIG["PENDING"];
             const Icon = cfg.icon;
             return (
-              <div className={`flex items-start gap-3 p-4 rounded-xl border ${cfg.bg}`}>
+              <div className={`flex items-start gap-3 p-4 rounded-2xl border ${cfg.bg}`}>
                 <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${cfg.color}`} />
                 <div>
                   <p className={`font-bold text-sm ${cfg.color}`}>{cfg.label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-600 mt-0.5">
                     {status.status === "REJECTED" ? (status.rejectReason || "Thông tin không hợp lệ") : cfg.desc}
                   </p>
                   {status.status === "APPROVED" && (
-                    <p className="text-xs text-emerald-500 mt-1 font-semibold">
+                    <p className="text-xs text-emerald-600 mt-1 font-semibold">
                       Danh tính: {status.extractedName} — {status.extractedIdNumber}
                     </p>
                   )}
@@ -281,11 +278,11 @@ const VerificationModal = ({ onBack }) => {
               </div>
             );
           })() : (
-            <div className="flex items-start gap-3 p-4 rounded-xl border bg-gray-900/50 border-gray-800">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-4 rounded-2xl border bg-amber-50 border-amber-200">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-sm text-gray-200">Chưa xác minh</p>
-                <p className="text-xs text-gray-500 mt-0.5">Upload ảnh CCCD để được xác minh danh tính</p>
+                <p className="font-bold text-sm text-amber-700">Chưa xác minh</p>
+                <p className="text-xs text-amber-600/80 mt-0.5">Upload ảnh CCCD để được xác minh danh tính</p>
               </div>
             </div>
           )}
@@ -293,7 +290,7 @@ const VerificationModal = ({ onBack }) => {
           {/* Chỉ hiện form nếu chưa APPROVED */}
           {(!status || status.status === "REJECTED") && (
             <>
-              <div className="h-px bg-gray-800" />
+              <div className="h-px bg-gray-100" />
 
               {/* Upload boxes */}
               <UploadBox
@@ -313,27 +310,27 @@ const VerificationModal = ({ onBack }) => {
 
               {/* Ghi chú */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ghi chú thêm</label>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Ghi chú thêm</label>
                 <textarea
                   rows={3}
                   value={note}
                   onChange={e => setNote(e.target.value)}
                   placeholder="Thông tin bổ sung (nếu có)..."
-                  className="w-full bg-gray-900/60 border border-gray-700/80 rounded-xl py-2.5 px-4 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/60 focus:bg-gray-900 transition-all resize-none"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:bg-white transition-all resize-none"
                 />
               </div>
 
               {/* Privacy notice */}
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-gray-900/50 border border-gray-800">
-                <FileText className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-gray-600 leading-relaxed">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100">
+                <FileText className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-blue-700/80 leading-relaxed">
                   Ảnh CCCD được mã hoá và lưu trữ bảo mật. Hệ thống tự động xoá ảnh sau 7 ngày xử lý. Thông tin chỉ dùng để xác minh danh tính.
                 </p>
               </div>
 
               {/* Error */}
               {error && (
-                <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-xl font-medium">
                   ⚠️ {error}
                 </div>
               )}
@@ -343,7 +340,7 @@ const VerificationModal = ({ onBack }) => {
                 <button
                   type="button"
                   onClick={onBack}
-                  className="w-1/3 py-3 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 hover:text-white transition-all"
+                  className="w-1/3 py-3.5 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all shadow-sm"
                 >
                   Huỷ
                 </button>
@@ -351,7 +348,7 @@ const VerificationModal = ({ onBack }) => {
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting || isUploading || !frontId || !backId}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:opacity-90 text-white font-bold text-sm shadow-[0_8px_20px_rgba(244,63,94,0.2)] hover:shadow-[0_8px_25px_rgba(244,63,94,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Đang gửi...</>
@@ -365,7 +362,7 @@ const VerificationModal = ({ onBack }) => {
 
           {/* Nếu APPROVED hoặc PENDING → chỉ hiện nút đóng */}
           {status && (status.status === "APPROVED" || status.status === "PENDING" || status.status === "PENDING_MANUAL") && (
-            <button onClick={onBack} className="w-full py-3 rounded-xl border border-gray-700 text-gray-400 font-semibold text-sm hover:bg-gray-800 hover:text-white transition-all">
+            <button onClick={onBack} className="w-full py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-all shadow-sm">
               Đóng
             </button>
           )}

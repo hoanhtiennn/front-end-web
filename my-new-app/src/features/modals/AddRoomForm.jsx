@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 import {
   X, ImagePlus, MapPin, Home, DollarSign, Maximize2,
   AlignLeft, CheckCircle2, Loader2, FileText, Info

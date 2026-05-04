@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useState, useActionState, useRef, useEffect } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 
 const getTokenPayload = (token) => {
   if (!token) return {};

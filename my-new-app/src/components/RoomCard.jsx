@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Heart, ShieldCheck } from "lucide-react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
-import { toggleSavePost, isPostSaved } from "../modals/SavedPostsModal";
+import { useUser } from "../context/UserContext";
+import { toggleSavePost, isPostSaved } from "../features/modals/SavedPostsModal";
 
 const RoomCard = ({ room, index, onClick }) => {
   const { user } = useUser();
@@ -136,3 +136,4 @@ const RoomCard = ({ room, index, onClick }) => {
 };
 
 export default RoomCard;
+

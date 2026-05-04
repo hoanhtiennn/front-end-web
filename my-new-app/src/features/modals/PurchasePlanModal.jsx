@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, CheckCircle2, Crown, Sparkles, Calendar, Zap } from "lucide-react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 
 const PLANS = {
   PRO: {

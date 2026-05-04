@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../../context/UserContext";
 import {
   X, Pencil, Trash2, ToggleLeft, ToggleRight,
   Loader2, AlertCircle, Home, RefreshCw, Eye, Heart

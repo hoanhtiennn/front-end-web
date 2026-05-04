@@ -1,4 +1,4 @@
-import { useUser } from "../contexts/UserContext";
+import { useUser } from "../context/UserContext";
 import { Heart, ShieldCheck } from "lucide-react";
 
 const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick, onVerifyClick, onAdminClick }) => {
@@ -11,7 +11,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
       <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center">
         <div
           onClick={goHome}
-          className="text-2xl font-black cursor-pointer tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-500 drop-shadow-sm hover:scale-[1.02] transition-transform duration-300"
+          className="text-xl md:text-2xl font-black cursor-pointer tracking-tighter text-transparent bg-clip-text bg-linear-to-r from-rose-500 to-orange-500 drop-shadow-sm hover:scale-[1.02] transition-transform duration-300 shrink-0"
         >
           PRO.STAY
         </div>
@@ -26,7 +26,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
               </button>
               <button
                 onClick={() => onAuthClick("REGISTER")}
-                className="bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold px-6 py-2.5 rounded-full shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 hover:-translate-y-0.5 transition-all duration-300"
+                className="bg-linear-to-r from-rose-500 to-orange-500 text-white font-bold px-6 py-2.5 rounded-full shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 hover:-translate-y-0.5 transition-all duration-300"
               >
                 Đăng ký
               </button>
@@ -36,7 +36,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
               
               {/* User Profile Pill */}
               <div className="flex items-center gap-3 bg-rose-50/80 px-2 py-1.5 rounded-full border border-rose-100 shadow-sm">
-                <div className="flex flex-col text-right pl-3">
+                <div className="hidden sm:flex flex-col text-right pl-3">
                   <span className="font-bold text-gray-900 text-[13px] leading-tight">
                     {user.name}
                   </span>
@@ -57,12 +57,12 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
               </div>
               
               {/* Action Buttons */}
-              <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 md:pl-5">
+              <div className="flex items-center gap-1 md:gap-1.5 border-l border-gray-200 pl-2 md:pl-5 overflow-x-auto md:overflow-visible no-scrollbar">
                 {user.role === "LANDLORD" && (
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={onMyPostsClick}
-                      className="text-gray-600 text-[13px] font-bold hover:text-rose-500 transition-colors hover:bg-rose-50 px-3 py-2 rounded-full"
+                      className="text-gray-600 text-[11px] md:text-[13px] font-bold hover:text-rose-500 transition-colors hover:bg-rose-50 px-2 md:px-3 py-2 rounded-full shrink-0"
                     >
                       Bài đăng
                     </button>
@@ -82,7 +82,7 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                     )}
                     <button
                       onClick={onPricingClick}
-                      className="bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold px-4 py-2 rounded-full text-[13px] hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 transition-all duration-300 mr-1"
+                      className="bg-linear-to-r from-rose-500 to-orange-500 text-white font-bold px-3 md:px-4 py-2 rounded-full text-[11px] md:text-[13px] hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 transition-all duration-300 mr-1 shrink-0"
                     >
                       Mua Lượt
                     </button>
@@ -102,20 +102,21 @@ const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClic
                 {user.role === "ADMIN" && (
                   <button
                     onClick={onAdminClick}
-                    className="bg-black text-white text-[13px] font-bold px-4 py-2 rounded-full hover:bg-gray-800 transition-colors"
+                    className="bg-linear-to-r from-rose-600 to-orange-500 text-white text-[11px] md:text-[13px] font-bold px-3 md:px-5 py-2 md:py-2.5 rounded-full shadow-lg shadow-rose-500/20 hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300 shrink-0"
                   >
-                    Admin Dashboard
+                    <span className="md:hidden">Admin</span>
+                    <span className="hidden md:inline">Admin Dashboard</span>
                   </button>
                 )}
                 <button
                   onClick={onEditProfileClick}
-                  className="text-gray-600 text-[13px] font-bold hover:text-rose-500 transition-colors hover:bg-rose-50 px-3 py-2 rounded-full"
+                  className="text-gray-600 text-[11px] md:text-[13px] font-bold hover:text-rose-500 transition-colors hover:bg-rose-50 px-2 md:px-3 py-2 rounded-full shrink-0"
                 >
                   Hồ sơ
                 </button>
                 <button
                   onClick={logout}
-                  className="text-red-500 text-[13px] font-bold hover:text-red-600 transition-colors hover:bg-red-50 px-3 py-2 rounded-full"
+                  className="text-red-500 text-[11px] md:text-[13px] font-bold hover:text-red-600 transition-colors hover:bg-red-50 px-2 md:px-3 py-2 rounded-full shrink-0"
                 >
                   Đăng xuất
                 </button>
