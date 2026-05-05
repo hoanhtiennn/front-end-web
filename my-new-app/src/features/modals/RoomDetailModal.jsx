@@ -13,6 +13,7 @@ import {
   UserCircle,
   Heart,
   ShieldCheck,
+  Eye,
 } from "lucide-react";
 import axios from "axios";
 import { useUser } from "../../context/UserContext";
@@ -602,40 +603,67 @@ export default function RoomDetailModal({ roomId, onBack }) {
           <div className="p-6 md:p-8 flex flex-col gap-6">
             {/* ── Nút Lưu bài (chỉ Người Thuê mới lưu được) ── */}
             {user?.role === "LANDLORD" ? (
-              // Chủ nhà: xem số người đã lưu bài
-              <div className="w-full flex items-center justify-center gap-4 py-5 px-6 rounded-2xl border-2 border-rose-100 bg-rose-50">
-                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
-                  <Heart className="w-6 h-6 fill-rose-400 text-rose-400" />
+              // Chủ nhà: xem số người đã lưu bài + lượt xem
+              <div className="flex flex-col gap-3">
+                <div className="w-full flex items-center justify-center gap-4 py-5 px-6 rounded-2xl border-2 border-rose-100 bg-rose-50">
+                  <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
+                    <Heart className="w-6 h-6 fill-rose-400 text-rose-400" />
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black text-rose-500 leading-none">
+                      {saveCount !== null ? saveCount : "--"}
+                    </p>
+                    <p className="text-xs font-semibold text-rose-400 uppercase tracking-wide mt-0.5">
+                      Người đã lưu bài
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-3xl font-black text-rose-500 leading-none">
-                    {saveCount !== null ? saveCount : "--"}
-                  </p>
-                  <p className="text-xs font-semibold text-rose-400 uppercase tracking-wide mt-0.5">
-                    Người đã lưu bài
-                  </p>
+                {/* Lượt xem */}
+                <div className="w-full flex items-center justify-center gap-4 py-4 px-6 rounded-2xl border-2 border-blue-100 bg-blue-50">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black text-blue-500 leading-none">
+                      {(room.viewCount ?? room.view_count ?? 0).toLocaleString("vi-VN")}
+                    </p>
+                    <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mt-0.5">
+                      Lượt xem
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
-              // Người thuê / khách: nút lưu bài
-              <button
-                onClick={handleToggleSave}
-                className={`w-full flex items-center justify-center gap-3 font-bold py-4 px-6 rounded-2xl border-2 transition-all duration-300 shadow-sm
-                  ${
-                    isSaved
-                      ? "bg-rose-500 border-rose-500 text-white shadow-rose-500/30 hover:bg-rose-600"
-                      : "bg-white border-gray-200 text-gray-600 hover:border-rose-400 hover:text-rose-500 hover:bg-rose-50"
-                  }
-                  ${likeAnim ? "scale-95" : ""}
-                `}
-              >
-                <Heart
-                  className={`w-6 h-6 transition-all duration-300 ${isSaved ? "fill-white text-white" : ""} ${likeAnim ? "scale-150" : "scale-100"}`}
-                />
-                <span className="text-base">
-                  {isSaved ? "❤️ Đã lưu bài viết" : "Lưu bài viết"}
-                </span>
-              </button>
+              // Người thuê / khách: nút lưu bài + lượt xem
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleToggleSave}
+                  className={`w-full flex items-center justify-center gap-3 font-bold py-4 px-6 rounded-2xl border-2 transition-all duration-300 shadow-sm
+                    ${
+                      isSaved
+                        ? "bg-rose-500 border-rose-500 text-white shadow-rose-500/30 hover:bg-rose-600"
+                        : "bg-white border-gray-200 text-gray-600 hover:border-rose-400 hover:text-rose-500 hover:bg-rose-50"
+                    }
+                    ${likeAnim ? "scale-95" : ""}
+                  `}
+                >
+                  <Heart
+                    className={`w-6 h-6 transition-all duration-300 ${isSaved ? "fill-white text-white" : ""} ${likeAnim ? "scale-150" : "scale-100"}`}
+                  />
+                  <span className="text-base">
+                    {isSaved ? "❤️ Đã lưu bài viết" : "Lưu bài viết"}
+                  </span>
+                </button>
+                {/* Lượt xem */}
+                <div className="w-full flex items-center gap-3 py-3 px-5 rounded-2xl border border-gray-200 bg-white">
+                  <Eye className="w-5 h-5 text-gray-400 shrink-0" />
+                  <span className="text-gray-500 text-sm font-semibold">
+                    <span className="text-gray-800 font-black text-base">
+                      {(room.viewCount ?? room.view_count ?? 0).toLocaleString("vi-VN")}
+                    </span>{" "}lượt xem
+                  </span>
+                </div>
+              </div>
             )}
 
             {/* Price Box */}

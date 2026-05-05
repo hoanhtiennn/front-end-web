@@ -1,31 +1,37 @@
-import React, { useState } from "react";
-import { X, CheckCircle2, Crown, Sparkles, Calendar, Zap } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, CheckCircle2, Crown, Sparkles, Calendar, Zap, Loader2 } from "lucide-react";
 import axios from "axios";
 import { useUser } from "../../context/UserContext";
 
-const PLANS = {
+// Fallback tĩnh nếu API lỗi
+const FALLBACK_PLANS = {
   PRO: {
     monthly: 100000,
-    yearly: 900000, // ~25% giảm
-    features: [
-      { icon: "✅", text: "Cộng thêm <strong>30 lượt</strong> tạo bài mỗi tháng." },
-      { icon: "✅", text: "Huy hiệu PRO nổi bật trên bài đăng." },
-      { icon: "❌", text: "Đẩy bài tự động lên trang nhất.", disabled: true },
-    ],
+    yearly: 900000,
+    maxPostsMonthly: 30,
   },
   ULTRA: {
     monthly: 300000,
-    yearly: 2700000, // ~25% giảm
-    features: [
-      { icon: "✅", text: "Lượt đăng bài: <strong>+100 Bài</strong> mỗi tháng." },
-      { icon: "✅", text: 'Hiển thị "Chủ trọ xanh" ưu tiên tìm kiếm.' },
-      { icon: "✅", text: "Theo dõi thống kê lượt xem phòng hàng ngày." },
-    ],
+    yearly: 2700000,
+    maxPostsMonthly: 100,
   },
 };
 
+const PLAN_FEATURES = {
+  PRO: (maxPosts) => [
+    { text: `Cộng thêm <strong>${maxPosts ?? 30} lượt</strong> tạo bài mỗi tháng.` },
+    { text: "Huy hiệu PRO nổi bật trên bài đăng." },
+    { text: "Đẩy bài tự động lên trang nhất.", disabled: true },
+  ],
+  ULTRA: (maxPosts) => [
+    { text: `Lượt đăng bài: <strong>+${maxPosts ?? 100} Bài</strong> mỗi tháng.` },
+    { text: 'Hiển thị "Chủ trọ xanh" ưu tiên tìm kiếm.' },
+    { text: "Theo dõi thống kê lượt xem phòng hàng ngày." },
+  ],
+};
+
 function formatVND(amount) {
-  return amount.toLocaleString("vi-VN") + "đ";
+  return Number(amount).toLocaleString("vi-VN") + "đ";
 }
 
 function getEmailFromToken(token) {
@@ -44,7 +50,52 @@ function getEmailFromToken(token) {
 export default function PurchasePlanModal({ onBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMonthly, setIsMonthly] = useState(true);
+  const [plansData, setPlansData] = useState(null);   // dữ liệu từ DB
+  const [plansError, setPlansError] = useState(false); // fallback nếu lỗi
+  const [isFetchingPlans, setIsFetchingPlans] = useState(true);
   const { user } = useUser();
+
+  // Fetch danh sách gói từ backend
+  useEffect(() => {
+    const token = localStorage.getItem("userToken");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    setIsFetchingPlans(true);
+    axios
+      .get("/api/plans", { headers })
+      .then((res) => {
+        const raw = res.data?.result || res.data?.data || res.data;
+        const list = Array.isArray(raw) ? raw : [];
+        // Map thành object keyed by plan id (PRO, ULTRA, FREE...)
+        const mapped = {};
+        list.forEach((p) => {
+          const key = (p.id || p.planId || p.name || "").toString().toUpperCase();
+          if (key) mapped[key] = p;
+        });
+        setPlansData(Object.keys(mapped).length > 0 ? mapped : null);
+        setPlansError(Object.keys(mapped).length === 0);
+      })
+      .catch(() => {
+        setPlansError(true);
+        setPlansData(null);
+      })
+      .finally(() => setIsFetchingPlans(false));
+  }, []);
+
+  // Helper: lấy giá từ DB hoặc fallback
+  const getPlanPrice = (planKey, monthly) => {
+    const fromDb = plansData?.[planKey];
+    if (fromDb) {
+      return monthly
+        ? (fromDb.priceMonthly ?? fromDb.price_monthly ?? FALLBACK_PLANS[planKey]?.monthly ?? 0)
+        : (fromDb.priceYearly ?? fromDb.price_yearly ?? FALLBACK_PLANS[planKey]?.yearly ?? 0);
+    }
+    return monthly ? FALLBACK_PLANS[planKey]?.monthly ?? 0 : FALLBACK_PLANS[planKey]?.yearly ?? 0;
+  };
+
+  const getMaxPosts = (planKey) => {
+    const fromDb = plansData?.[planKey];
+    return fromDb?.maxPosts ?? fromDb?.max_posts ?? FALLBACK_PLANS[planKey]?.maxPostsMonthly ?? null;
+  };
 
   const handlePurchase = async (planId) => {
     setIsLoading(true);
@@ -185,15 +236,15 @@ export default function PurchasePlanModal({ onBack }) {
                 </h3>
                 <div className="flex items-baseline justify-center gap-1 mb-1">
                   <span className="text-3xl font-extrabold text-gray-900">
-                    {formatVND(isMonthly ? PLANS.PRO.monthly : PLANS.PRO.yearly)}
+                    {formatVND(getPlanPrice("PRO", isMonthly))}
                   </span>
                 </div>
                 <p className="text-gray-500 text-xs md:text-sm mb-4">
-                  {isMonthly ? "/ tháng" : "/ năm (tiết kiệm " + formatVND(PLANS.PRO.monthly * 12 - PLANS.PRO.yearly) + ")"}
+                  {isMonthly ? "/ tháng" : "/ năm (tiết kiệm " + formatVND(getPlanPrice("PRO", true) * 12 - getPlanPrice("PRO", false)) + ")"}
                 </p>
 
                 <ul className="text-left space-y-2 mb-4">
-                  {PLANS.PRO.features.map((f, i) => (
+                  {PLAN_FEATURES.PRO(getMaxPosts("PRO")).map((f, i) => (
                     <li
                       key={i}
                       className={`flex items-start gap-2.5 text-sm ${f.disabled ? "opacity-40 text-gray-400" : "text-gray-700"}`}
@@ -235,15 +286,15 @@ export default function PurchasePlanModal({ onBack }) {
                 </h3>
                 <div className="flex items-baseline justify-center gap-1 mb-1">
                   <span className="text-4xl font-extrabold text-gray-900">
-                    {formatVND(isMonthly ? PLANS.ULTRA.monthly : PLANS.ULTRA.yearly)}
+                    {formatVND(getPlanPrice("ULTRA", isMonthly))}
                   </span>
                 </div>
                 <p className="text-blue-600 text-xs md:text-sm mb-4">
-                  {isMonthly ? "/ tháng" : "/ năm (tiết kiệm " + formatVND(PLANS.ULTRA.monthly * 12 - PLANS.ULTRA.yearly) + ")"}
+                  {isMonthly ? "/ tháng" : "/ năm (tiết kiệm " + formatVND(getPlanPrice("ULTRA", true) * 12 - getPlanPrice("ULTRA", false)) + ")"}
                 </p>
 
                 <ul className="text-left space-y-2 mb-4">
-                  {PLANS.ULTRA.features.map((f, i) => (
+                  {PLAN_FEATURES.ULTRA(getMaxPosts("ULTRA")).map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700">
                       <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                       <span dangerouslySetInnerHTML={{ __html: f.text }} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, ShieldCheck } from "lucide-react";
+import { Heart, ShieldCheck, Eye } from "lucide-react";
 import axios from "axios";
 import { useUser } from "../context/UserContext";
 import { toggleSavePost, isPostSaved } from "../features/modals/SavedPostsModal";
@@ -34,6 +34,7 @@ const RoomCard = ({ room, index, onClick }) => {
       onClick={() => onClick && onClick(room.id)}
       className={`group relative flex flex-col overflow-hidden rounded-3xl bg-white cursor-pointer transition-all duration-500 hover:-translate-y-2 shadow-sm border border-gray-100/50 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:border-blue-100`}
     >
+      {/* ── Ảnh ── */}
       <div className={`relative w-full overflow-hidden aspect-square`}>
         <img
           src={room.image}
@@ -99,16 +100,19 @@ const RoomCard = ({ room, index, onClick }) => {
         )}
       </div>
 
-      <div className={`p-5 flex flex-col gap-3 relative z-20 bg-white`}>
+      {/* ── Nội dung ── */}
+      <div className="p-5 flex flex-col gap-3 bg-white">
         <h3 className="text-[17px] font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-rose-500 group-hover:to-orange-500 transition-colors line-clamp-2 leading-tight">
           {room.title}
         </h3>
+
         {room.isOwnerVerified && (
           <div className="flex items-center gap-1 text-emerald-600 text-[12px] font-bold -mt-1">
             <ShieldCheck className="w-3.5 h-3.5" />
             Chủ trọ đã xác minh danh tính
           </div>
         )}
+
         <div className="flex items-center gap-2 text-gray-500">
           <span className="text-rose-500 font-bold opacity-70">📍</span>
           <p className="text-sm truncate font-medium">
@@ -117,15 +121,14 @@ const RoomCard = ({ room, index, onClick }) => {
               .join(", ")}
           </p>
         </div>
+
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <div className="flex gap-2 text-[13px] font-semibold text-gray-400">
-            <span className="bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-              40m²
-            </span>
-            <span className="bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-              Ban công
-            </span>
+          {/* View count */}
+          <div className="flex items-center gap-1.5 text-gray-400 text-[13px] font-semibold">
+            <Eye className="w-3.5 h-3.5" />
+            <span>{(room.viewCount ?? 0).toLocaleString("vi-VN")} lượt xem</span>
           </div>
+
           <button className="text-[13px] font-extrabold text-white bg-rose-500 group-hover:bg-orange-500 px-3 py-1.5 rounded-full transition-colors uppercase tracking-wide flex items-center gap-1 shadow-sm">
             Khám phá <span>→</span>
           </button>
@@ -136,4 +139,3 @@ const RoomCard = ({ room, index, onClick }) => {
 };
 
 export default RoomCard;
-

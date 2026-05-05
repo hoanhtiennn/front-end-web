@@ -83,7 +83,8 @@ export default function PaymentResultModal() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          window.location.href = "/";
+          window.history.replaceState({}, document.title, "/");
+          window.location.reload();
         }
         return prev - 1;
       });
@@ -93,7 +94,9 @@ export default function PaymentResultModal() {
   }, [status]);
 
   const goHome = () => {
-    window.location.href = "/";
+    // Xóa query params VNPay khỏi URL mà không reload trang
+    window.history.replaceState({}, document.title, "/");
+    window.location.reload();
   };
 
   return (

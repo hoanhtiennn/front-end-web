@@ -127,6 +127,8 @@ function MainApp() {
       planType: p.userPlan || p.plan || (p.user && p.user.plan) || "FREE",
       isOwnerVerified: p.user?.isVerified || p.ownerVerified || false,
       amenities: Array.isArray(p.amenities) ? p.amenities : [],
+      viewCount: p.postStat?.viewCount ?? p.postStats?.viewCount ?? p.viewCount ?? p.view_count ?? p.stats?.viewCount ?? 0,
+      rankingScore: p.postStat?.rankingScore ?? p.postStats?.rankingScore ?? p.rankingScore ?? p.ranking_score ?? p.stats?.rankingScore ?? 0,
     };
   };
 
@@ -173,7 +175,13 @@ function MainApp() {
           page,
         });
 
-        const mappedRooms = items.map(mapPostToRoom);
+        const planPriority = { ULTRA: 2, PRO: 1, FREE: 0 };
+        const mappedRooms = items.map(mapPostToRoom)
+          .sort((a, b) => {
+            const tierDiff = (planPriority[b.planType] ?? 0) - (planPriority[a.planType] ?? 0);
+            if (tierDiff !== 0) return tierDiff;
+            return (b.rankingScore ?? 0) - (a.rankingScore ?? 0);
+          });
 
         setRooms(mappedRooms);
         setCurrentPage(page);
@@ -206,7 +214,7 @@ function MainApp() {
   useEffect(() => {
     const fetchRealPosts = async () => {
       try {
-        await loadRooms({ endpoint: "/api/posts", params: {}, page: 1 });
+        await loadRooms({ endpoint: "/api/posts", params: { sort: "postStat.rankingScore,desc" }, page: 1 });
       } catch {
         // loadRooms đã log lỗi và xử lý trạng thái
       }
