@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { Search, ExternalLink, Ban, Eye, ChevronLeft, ChevronRight, RefreshCw, AlertCircle } from "lucide-react";
+import { Search, ExternalLink, Ban, CheckCircle2, Eye, ChevronLeft, ChevronRight, RefreshCw, AlertCircle } from "lucide-react";
 
 const STATUS_MAP = {
   ACTIVE: { label: "Đang hiển thị", cls: "bg-green-100 text-green-800 border-green-200" },
-  CLOSED: { label: "Đã cho thuê",       cls: "bg-gray-200 text-gray-600 border-gray-300" },
+  CLOSED: { label: "Đã cho thuê",   cls: "bg-gray-200 text-gray-600 border-gray-300" },
 };
 
 const ROOM_TYPE_MAP = {
-  ROOM:       "Phòng trọ",
-  APARTMENT:  "Căn hộ",
-  DORMITORY:  "KTX",
-  HOUSE:      "Nhà nguyên căn",
-  STUDIO:     "Studio",
+  ROOM:      "Phòng trọ",
+  APARTMENT: "Căn hộ",
+  DORMITORY: "KTX",
+  HOUSE:     "Nhà nguyên căn",
+  STUDIO:    "Studio",
 };
 
 function formatPrice(price) {
@@ -31,6 +31,8 @@ export default function AdminPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [toggleError, setToggleError] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(0);
@@ -49,26 +51,21 @@ export default function AdminPosts() {
 
       let res;
       try {
-        // Thử gọi endpoint của Admin trước (để lấy cả bài ACTIVE và CLOSED)
         res = await axios.get(`/api/posts/admin?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token()}` },
         });
-      } catch (adminErr) {
-        // Fallback về API cũ nếu không có endpoint admin
+      } catch {
         res = await axios.get(`/api/posts?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token()}` },
         });
       }
 
-      // Bóc data từ PageResponse hoặc wrapped response
       let content = [];
       let total = 0;
       let pages = 0;
 
       if (Array.isArray(res.data)) {
-        content = res.data;
-        total = res.data.length;
-        pages = 1;
+        content = res.data; total = res.data.length; pages = 1;
       } else if (Array.isArray(res.data?.content)) {
         content = res.data.content;
         total = res.data.totalElements ?? res.data.content.length;
@@ -92,10 +89,30 @@ export default function AdminPosts() {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
-  // Search and status filter client-side (trên trang hiện tại)
+  // ── Toggle ACTIVE ↔ CLOSED ──
+  const handleToggleStatus = useCallback(async (post) => {
+    const newStatus = post.status === "ACTIVE" ? "CLOSED" : "ACTIVE";
+    try {
+      setTogglingId(post.id);
+      setToggleError(null);
+      await axios.patch(
+        `/api/posts/${post.id}/status?status=${newStatus}`,
+        null,
+        { headers: { Authorization: `Bearer ${token()}` } }
+      );
+      setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: newStatus } : p));
+    } catch (err) {
+      setToggleError(
+        `Không thể đổi trạng thái bài "${post.title?.slice(0, 30)}": ` +
+        (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setTogglingId(null);
+    }
+  }, []);
+
   const displayed = posts.filter(p => {
     if (statusFilter && p.status !== statusFilter) return false;
-    
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -141,9 +158,9 @@ export default function AdminPosts() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Tổng bài",       count: totalElements,  color: "text-gray-800",   bg: "bg-gray-50 border-gray-200" },
-          { label: "Đang hiển thị",  count: activeCount,    color: "text-green-700",  bg: "bg-green-50 border-green-200" },
-          { label: "Đã cho thuê",    count: closedCount,    color: "text-gray-600",   bg: "bg-gray-100 border-gray-300" },
+          { label: "Tổng bài",      count: totalElements, color: "text-gray-800",  bg: "bg-gray-50 border-gray-200" },
+          { label: "Đang hiển thị", count: activeCount,   color: "text-green-700", bg: "bg-green-50 border-green-200" },
+          { label: "Đã cho thuê",   count: closedCount,   color: "text-gray-600",  bg: "bg-gray-100 border-gray-300" },
         ].map(s => (
           <div key={s.label} className={`rounded-xl border px-5 py-4 ${s.bg}`}>
             <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
@@ -173,10 +190,16 @@ export default function AdminPosts() {
         ))}
       </div>
 
-      {/* Error */}
+      {/* Error & ToggleError */}
       {error && (
         <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
           <AlertCircle size={16} /> {error}
+        </div>
+      )}
+      {toggleError && (
+        <div className="flex items-center justify-between gap-2 px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-700 text-sm font-medium">
+          <span className="flex items-center gap-2"><AlertCircle size={16} /> {toggleError}</span>
+          <button onClick={() => setToggleError(null)} className="text-orange-500 hover:text-orange-700 font-bold">✕</button>
         </div>
       )}
 
@@ -201,6 +224,7 @@ export default function AdminPosts() {
             ) : displayed.map(p => {
               const stCfg = STATUS_MAP[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-600 border-gray-200" };
               const thumb = p.images?.[0]?.url;
+              const isToggling = togglingId === p.id;
               return (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   {/* Tên bài */}
@@ -246,11 +270,27 @@ export default function AdminPosts() {
                   {/* Actions */}
                   <td className="px-6 py-4 text-right">
                     <div className="inline-flex items-center gap-1">
-                      <button title="Xem chi tiết" className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg transition-colors">
+                      <button
+                        title="Xem chi tiết"
+                        className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
+                      >
                         <Eye size={15} />
                       </button>
-                      <button title="Ẩn / Hiện bài" className="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors">
-                        <Ban size={15} />
+                      {/* ── Ẩn / Hiện bài — kết nối PATCH /api/posts/{id}/status ── */}
+                      <button
+                        title={p.status === "ACTIVE" ? "Đóng bài này" : "Mở lại bài này"}
+                        disabled={isToggling}
+                        onClick={() => handleToggleStatus(p)}
+                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${
+                          p.status === "ACTIVE"
+                            ? "text-gray-500 hover:text-yellow-600 hover:bg-yellow-50"
+                            : "text-gray-400 hover:text-green-600 hover:bg-green-50"
+                        }`}
+                      >
+                        {isToggling
+                          ? <RefreshCw size={15} className="animate-spin" />
+                          : p.status === "ACTIVE" ? <Ban size={15} /> : <CheckCircle2 size={15} />
+                        }
                       </button>
                       <a
                         href={`/posts/${p.id}`}

@@ -471,8 +471,8 @@ export default function AdminVerifications() {
                 </div>
               </div>
 
-              {/* Reject input */}
-              {showRejectInput && selectedReq.status === "PENDING" && (
+              {/* Reject input — hiện khi PENDING hoặc PENDING_MANUAL */}
+              {showRejectInput && (selectedReq.status === "PENDING" || selectedReq.status === "PENDING_MANUAL") && (
                 <div className="border border-red-200 bg-red-50 rounded-xl p-4 space-y-3">
                   <label className="text-sm font-bold text-red-700">
                     Lý do từ chối *
@@ -488,8 +488,8 @@ export default function AdminVerifications() {
               )}
             </div>
 
-            {/* Footer actions */}
-            {selectedReq.status === "PENDING" && (
+            {/* Footer actions — hiện khi PENDING hoặc PENDING_MANUAL */}
+            {(selectedReq.status === "PENDING" || selectedReq.status === "PENDING_MANUAL") && (
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                 {!showRejectInput ? (
                   <>

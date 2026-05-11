@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MapPin, Settings2, Target, Search } from "lucide-react";
 
-const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLocating, filters, setFilters, searchRadius, setSearchRadius }) => {
+const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLocating, filters, setFilters, searchRadius, setSearchRadius, onRadiusChange }) => {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
@@ -49,8 +49,8 @@ const SearchBar = ({ searchTerm, setSearchTerm, onLocationClick, onSearch, isLoc
               step="1"
               value={searchRadius}
               onChange={(e) => setSearchRadius(Number(e.target.value))}
-              onMouseUp={() => onLocationClick(searchRadius)}
-              onTouchEnd={() => onLocationClick(searchRadius)}
+              onMouseUp={(e) => onRadiusChange?.(Number(e.target.value))}
+              onTouchEnd={(e) => onRadiusChange?.(Number(e.target.value))}
               disabled={isLocating}
               className="w-20 md:w-24 lg:w-32 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-rose-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-rose-500 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-md"
             />

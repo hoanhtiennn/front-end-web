@@ -41,6 +41,9 @@ function MainApp() {
   const [editingPost, setEditingPost] = useState(null);
   const [showVerification, setShowVerification] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false);
+  // Vị trí GPS đã xác nhận (null = chưa từng click "Gần tôi")
+  const [confirmedLocation, setConfirmedLocation] = useState(null);
+  const [locationToast, setLocationToast] = useState(null); // toast nhỏ khi GPS lỗi
   const [rooms, setRooms] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -311,6 +314,9 @@ function MainApp() {
             JSON.stringify({ latitude, longitude, ts: Date.now() }),
           );
 
+          // Lưu vào state để slider biết dùng tọa độ này khi kéo sau này
+          setConfirmedLocation({ lat: latitude, lng: longitude });
+
           setSearchTerm(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
           fetchNearbyRooms(latitude, longitude).finally(() =>
             setIsLocating(false),
@@ -345,6 +351,8 @@ function MainApp() {
               setSearchTerm(
                 `${Number(cached.latitude).toFixed(6)}, ${Number(cached.longitude).toFixed(6)}`,
               );
+              // Cấp nhật confirmedLocation từ cache hợp lệ
+              setConfirmedLocation({ lat: cached.latitude, lng: cached.longitude });
               fetchNearbyRooms(cached.latitude, cached.longitude).finally(() =>
                 setIsLocating(false),
               );
@@ -360,6 +368,48 @@ function MainApp() {
         GEOLOCATION_OPTIONS,
       );
     });
+
+  // Kéo slider bán kính → tự động xin GPS mới (không cache) rồi search
+  const handleRadiusChange = (radius) => {
+    if (!navigator.geolocation) return;
+    if (isLocating) return; // đang định vị thì bỏ qua
+    setIsLocating(true);
+    setLocationToast(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        localStorage.setItem(
+          "lastKnownLocation",
+          JSON.stringify({ latitude: lat, longitude: lng, ts: Date.now() }),
+        );
+        setConfirmedLocation({ lat, lng });
+        setSearchTerm(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        // Reverse geocode địa chỉ (không block search)
+        const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
+        if (GOONG_KEY?.trim()) {
+          axios.get(
+            `https://rsapi.goong.io/Geocode?latlng=${lat},${lng}&api_key=${GOONG_KEY.trim()}`,
+            { timeout: 3000 },
+          ).then(r => {
+            const addr = r.data?.results?.[0]?.formatted_address;
+            if (addr) setSearchTerm(addr);
+          }).catch(() => {});
+        }
+        fetchNearbyRooms(lat, lng, radius).finally(() => setIsLocating(false));
+      },
+      () => {
+        // GPS bị từ chối — nếu có vị trí cũ thì dùng lại, không mở trang mới
+        setIsLocating(false);
+        if (confirmedLocation) {
+          fetchNearbyRooms(confirmedLocation.lat, confirmedLocation.lng, radius);
+        } else {
+          setLocationToast("📍 Bật GPS để tìm phòng gần đây");
+          setTimeout(() => setLocationToast(null), 3000);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }, // maximumAge: 0 = luôn lấy tươi
+    );
+  };
 
   const handleSearch = async () =>
     enforceAuth(() => {
@@ -495,7 +545,15 @@ function MainApp() {
         setFilters={setFilters}
         searchRadius={searchRadius}
         setSearchRadius={setSearchRadius}
+        onRadiusChange={handleRadiusChange}
       />
+
+      {/* Toast GPS nhỏ */}
+      {locationToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-gray-900/90 text-white text-sm font-semibold rounded-full shadow-xl backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {locationToast}
+        </div>
+      )}
 
       <main className="container mx-auto px-4 py-8 relative z-10">
         <div className="mb-6 flex items-end justify-between border-b border-gray-200 pb-5 text-gray-900 relative">

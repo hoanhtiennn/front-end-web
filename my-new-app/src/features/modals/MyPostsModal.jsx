@@ -3,7 +3,7 @@ import axios from "axios";
 import { useUser } from "../../context/UserContext";
 import {
   X, Pencil, Trash2, ToggleLeft, ToggleRight,
-  Loader2, AlertCircle, Home, RefreshCw, Eye, Heart
+  Loader2, AlertCircle, Home, RefreshCw, Eye, Heart, Lock
 } from "lucide-react";
 
 const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
@@ -218,6 +218,25 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
                     }`}>
                       {post.status === "CLOSED" ? "Đã cho thuê" : "Còn trống"}
                     </span>
+
+                    {/* Lượt xem — gate theo gói */}
+                    {user?.plan && user.plan !== "FREE" ? (
+                      <span className="flex items-center gap-1 text-[11px] text-blue-400 font-semibold">
+                        <Eye className="w-3 h-3" />
+                        {post.postStat?.viewCount != null
+                          ? post.postStat.viewCount.toLocaleString("vi-VN")
+                          : "—"}
+                      </span>
+                    ) : (
+                      <span
+                        className="flex items-center gap-1 text-[11px] text-gray-400 font-semibold cursor-help"
+                        title="Nâng cấp gói PRO / ULTRA để xem lượt xem"
+                      >
+                        <Lock className="w-3 h-3" />
+                        Lượt xem
+                      </span>
+                    )}
+
                     {/* Lượt lưu bài */}
                     <span className="flex items-center gap-1 text-[11px] text-rose-300 font-semibold ml-auto">
                       <Heart className="w-3 h-3 fill-rose-300" />
