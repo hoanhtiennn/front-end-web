@@ -10,6 +10,9 @@ import {
   LogOut,
 } from "lucide-react";
 
+/**
+ * Component bố cục chung của trang Admin, bao gồm thanh điều hướng (Sidebar) và vùng nội dung chính
+ */
 export default function AdminLayout({ activeTab, setActiveTab, onExit, children }) {
   const navItems = [
     { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },

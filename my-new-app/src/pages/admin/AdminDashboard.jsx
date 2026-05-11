@@ -6,6 +6,9 @@ import {
   CheckCircle2, XCircle, Clock, AlertTriangle,
 } from "lucide-react";
 
+/**
+ * Component hiển thị thẻ thống kê số liệu (StatCard) với biểu tượng và màu sắc
+ */
 function StatCard({ title, value, sub, icon, accent, loading }) {
   // Gán vào biến viết hoa để dùng làm JSX component — linter nhận biết rõ ràng hơn
   const Icon = icon;
@@ -46,6 +49,9 @@ StatCard.defaultProps = {
   loading: false,
 };
 
+/**
+ * Component trang chủ của Admin, hiển thị bảng tóm tắt và số liệu tổng quan của hệ thống
+ */
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +59,9 @@ export default function AdminDashboard() {
 
   const token = () => localStorage.getItem("userToken");
 
+  /**
+   * Gọi API lấy dữ liệu thống kê tổng quan của toàn bộ hệ thống
+   */
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);

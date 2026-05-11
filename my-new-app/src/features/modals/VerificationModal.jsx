@@ -37,6 +37,9 @@ const STATUS_CONFIG = {
   },
 };
 
+/**
+ * Component hiển thị vùng chọn (upload) ảnh CCCD mặt trước/mặt sau
+ */
 const UploadBox = ({ label, hint, value, onChange, loading }) => (
   <div className="space-y-2">
     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</label>
@@ -74,6 +77,9 @@ const UploadBox = ({ label, hint, value, onChange, loading }) => (
   </div>
 );
 
+/**
+ * Modal cho phép chủ trọ gửi thông tin CCCD để hệ thống/admin xác minh danh tính
+ */
 const VerificationModal = ({ onBack }) => {
   const { user, updateUser } = useUser();
   const token = localStorage.getItem("userToken");
@@ -103,6 +109,9 @@ const VerificationModal = ({ onBack }) => {
       return;
     }
 
+    /**
+     * Gọi API kiểm tra trạng thái xác minh hiện tại của người dùng
+     */
     const fetchStatus = async () => {
       try {
         // Refresh profile trước để tránh tình trạng "mới mở modal vẫn hiện chưa xác minh".
@@ -147,6 +156,9 @@ const VerificationModal = ({ onBack }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.id, user?.isVerified]);
 
+  /**
+   * Gọi API để upload ảnh CCCD lên server và nhận về ID của ảnh
+   */
   const uploadFile = async (file, setId, setUploading) => {
     if (!file) return;
     setUploading(true);
@@ -176,6 +188,9 @@ const VerificationModal = ({ onBack }) => {
     }
   };
 
+  /**
+   * Gửi yêu cầu xác minh danh tính cùng với ID của 2 ảnh CCCD đã upload
+   */
   const handleSubmit = async () => {
     if (!frontId || !backId) {
       setError("Vui lòng upload đủ ảnh CCCD mặt trước và mặt sau!");

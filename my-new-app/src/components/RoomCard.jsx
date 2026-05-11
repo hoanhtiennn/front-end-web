@@ -2,8 +2,14 @@ import { useState, useEffect } from "react";
 import { Heart, ShieldCheck, Eye } from "lucide-react";
 import axios from "axios";
 import { useUser } from "../context/UserContext";
-import { toggleSavePost, isPostSaved } from "../features/modals/SavedPostsModal";
+import {
+  toggleSavePost,
+  isPostSaved,
+} from "../features/modals/SavedPostsModal";
 
+/**
+ * Component hiển thị thẻ thông tin tóm tắt của một phòng trọ
+ */
 const RoomCard = ({ room, index, onClick }) => {
   const { user } = useUser();
   const userId = user?.id ?? null;
@@ -14,8 +20,20 @@ const RoomCard = ({ room, index, onClick }) => {
 
   useEffect(() => {
     setIsSaved(isPostSaved(room.id, userId));
+
+    const handleSavedPostsChanged = (e) => {
+      if (e.detail.postId === room.id) {
+        setIsSaved(e.detail.isSaved);
+      }
+    };
+
+    window.addEventListener('savedPostsChanged', handleSavedPostsChanged);
+    return () => window.removeEventListener('savedPostsChanged', handleSavedPostsChanged);
   }, [room.id, userId]);
 
+  /**
+   * Xử lý sự kiện thả tim/bỏ tim (lưu bài đăng vào danh sách yêu thích)
+   */
   const handleToggleSave = async (e) => {
     e.stopPropagation(); // Không mở modal chi tiết
     const token = localStorage.getItem("userToken");
@@ -56,7 +74,7 @@ const RoomCard = ({ room, index, onClick }) => {
             </span>
           ) : (
             <span className="bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white rounded-full uppercase border border-white/40 tracking-wider">
-              {room.tag || "Mới"}
+              FREE
             </span>
           )}
 
@@ -126,7 +144,9 @@ const RoomCard = ({ room, index, onClick }) => {
           {/* View count */}
           <div className="flex items-center gap-1.5 text-gray-400 text-[13px] font-semibold">
             <Eye className="w-3.5 h-3.5" />
-            <span>{(room.viewCount ?? 0).toLocaleString("vi-VN")} lượt xem</span>
+            <span>
+              {(room.viewCount ?? 0).toLocaleString("vi-VN")} lượt xem
+            </span>
           </div>
 
           <button className="text-[13px] font-extrabold text-white bg-rose-500 group-hover:bg-orange-500 px-3 py-1.5 rounded-full transition-colors uppercase tracking-wide flex items-center gap-1 shadow-sm">

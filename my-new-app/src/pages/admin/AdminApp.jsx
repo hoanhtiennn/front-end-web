@@ -8,9 +8,15 @@ import AdminPlans from "./AdminPlans";
 import AdminAmenities from "./AdminAmenities";
 import AdminPostStats from "./AdminPostStats";
 
+/**
+ * Component gốc của trang quản trị (Admin), điều hướng và hiển thị các tab tương ứng
+ */
 export default function AdminApp({ onExit }) {
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  /**
+   * Chọn và render component nội dung tương ứng dựa trên tab đang active
+   */
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":

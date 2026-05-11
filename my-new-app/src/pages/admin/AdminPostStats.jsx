@@ -12,7 +12,9 @@ const PLAN_COLORS = {
   FREE:  { bar: "#94a3b8", light: "bg-slate-400",   badge: "bg-slate-100  text-slate-600"  },
 };
 
-// ── Dữ liệu mẫu (fallback khi backend chưa có API) ──
+/**
+ * Sinh dữ liệu thống kê mẫu ngẫu nhiên cho 12 tháng (khi chưa có API thực)
+ */
 function generateFallbackData() {
   const months = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
   return months.map((month, i) => ({
@@ -28,7 +30,9 @@ function generateFallbackData() {
   }));
 }
 
-// ── Mini biểu đồ cột đơn giản (không cần thư viện) ──
+/**
+ * Component biểu đồ cột (Bar Chart) tự chế bằng CSS hiển thị số lượng gói PRO/ULTRA
+ */
 function BarChart({ data, planKeys }) {
   const maxVal = Math.max(...data.map(d => planKeys.reduce((s, k) => s + (d[k] || 0), 0)), 1);
 
@@ -70,7 +74,9 @@ function BarChart({ data, planKeys }) {
   );
 }
 
-// ── Biểu đồ doanh thu (line-style dạng cột đơn) ──
+/**
+ * Component biểu đồ cột đơn hiển thị tổng doanh thu
+ */
 function RevenueChart({ data }) {
   const maxVal = Math.max(...data.map(d => d.totalRevenue || 0), 1);
   return (
@@ -92,6 +98,9 @@ function RevenueChart({ data }) {
   );
 }
 
+/**
+ * Component hiển thị thống kê tổng doanh thu và lượng bán ra của các gói dịch vụ
+ */
 export default function AdminPostStats() {
   const [monthlyData, setMonthlyData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +110,9 @@ export default function AdminPostStats() {
 
   const token = () => localStorage.getItem("userToken");
 
+  /**
+   * Gọi API lấy báo cáo thống kê theo năm. Tự động fallback sang số ngẫu nhiên nếu lỗi.
+   */
   const fetchStats = useCallback(async () => {
     setLoading(true);
     setError(null);

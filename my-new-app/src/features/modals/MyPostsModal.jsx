@@ -6,6 +6,9 @@ import {
   Loader2, AlertCircle, Home, RefreshCw, Eye, Heart, Lock
 } from "lucide-react";
 
+/**
+ * Modal hiển thị danh sách các bài đăng của người dùng (Chủ trọ), cho phép quản lý (sửa, xóa, đổi trạng thái)
+ */
 const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
   const { user } = useUser();
   const [posts, setPosts] = useState([]);
@@ -18,6 +21,9 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
 
   useEffect(() => { fetchMyPosts(); }, []);
 
+  /**
+   * Lấy danh sách bài đăng của chính người dùng từ backend
+   */
   const fetchMyPosts = async () => {
     try {
       setLoading(true);
@@ -38,7 +44,9 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
     }
   };
 
-  // Gọi API đếm lượt thích từng bài — sản sàng khi backend có endpoint
+  /**
+   * Lấy số lượng lượt "thả tim" (lưu bài) cho từng bài đăng trong danh sách
+   */
   const fetchSaveCounts = async (list, token) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const counts = {};
@@ -55,6 +63,9 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
     setSaveCounts(counts);
   };
 
+  /**
+   * Xử lý đổi trạng thái bài đăng (Còn trống <-> Đã cho thuê)
+   */
   const handleToggleStatus = async (post) => {
     const newStatus = post.status === "ACTIVE" ? "CLOSED" : "ACTIVE";
     try {
@@ -73,6 +84,9 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
     }
   };
 
+  /**
+   * Xử lý xóa vĩnh viễn một bài đăng
+   */
   const handleDelete = async (id) => {
     try {
       setDeletingId(id);
@@ -89,6 +103,9 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
     }
   };
 
+  /**
+   * Lấy URL ảnh đầu tiên của bài đăng làm ảnh đại diện, hoặc dùng ảnh mặc định nếu không có
+   */
   const getImageUrl = (post) =>
     post.images?.[0]?.url ||
     post.images?.[0]?.imageUrl ||

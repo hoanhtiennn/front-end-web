@@ -19,6 +19,9 @@ import SavedPostsModal from "./features/modals/SavedPostsModal";
 import VerificationModal from "./features/modals/VerificationModal";
 import AdminApp from "./pages/admin/AdminApp";
 
+/**
+ * Component chính chứa toàn bộ giao diện, state và luồng logic hoạt động của ứng dụng
+ */
 function MainApp() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
@@ -61,6 +64,10 @@ function MainApp() {
 
   const { user } = useUser();
 
+  /**
+   * Đảm bảo người dùng đã đăng nhập trước khi thực thi một hành động.
+   * Nếu chưa đăng nhập, hiển thị modal đăng nhập và chặn hành động đó.
+   */
   const enforceAuth = (callback) => {
     if (!user) {
       setAuthMode("LOGIN");
@@ -70,6 +77,10 @@ function MainApp() {
     return callback();
   };
 
+  /**
+   * Trích xuất mảng dữ liệu từ nhiều định dạng phản hồi API khác nhau,
+   * giúp chuẩn hóa cấu trúc list đầu vào cho các hàm xử lý.
+   */
   const extractList = (payload) => {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload?.content)) return payload.content;
@@ -80,6 +91,10 @@ function MainApp() {
     return [];
   };
 
+  /**
+   * Phân tích thông tin phân trang (siêu dữ liệu) từ phản hồi API
+   * Xác định tổng số trang, tổng số mục và trạng thái còn trang tiếp theo hay không.
+   */
   const parseMeta = (payload, currentPage, pageSize, currentItemsCount) => {
     const root = payload?.data || payload || {};
     const totalPagesRaw = root.totalPages ?? root.page?.totalPages;
@@ -113,6 +128,10 @@ function MainApp() {
     };
   };
 
+  /**
+   * Ánh xạ dữ liệu bài đăng thô từ API sang cấu trúc thuộc tính phòng trọ chuẩn (RoomCard format).
+   * Xử lý trường hợp thiếu hình ảnh, định dạng địa chỉ, và trích xuất điểm/lượt xem.
+   */
   const mapPostToRoom = (p) => {
     let imgUrl =
       "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800";
@@ -135,6 +154,10 @@ function MainApp() {
     };
   };
 
+  /**
+   * Gọi API GET để lấy một trang dữ liệu bài đăng (phân trang).
+   * @param {Object} args Bao gồm endpoint, headers, params, page, pageSize.
+   */
   const fetchPostsPage = useCallback(
     async ({
       endpoint,
@@ -160,6 +183,13 @@ function MainApp() {
     [DEFAULT_PAGE_SIZE],
   );
 
+  /**
+   * Luồng tải và sắp xếp danh sách phòng trọ chính:
+   * 1. Lấy dữ liệu phân trang từ API.
+   * 2. Chuẩn hóa dữ liệu qua `mapPostToRoom`.
+   * 3. Sắp xếp ưu tiên hiển thị theo Gói dịch vụ (ULTRA > PRO > FREE) và theo điểm đánh giá.
+   * 4. Cập nhật các state phân trang.
+   */
   const loadRooms = useCallback(
     async ({ endpoint, params = {}, page = 1, retryWithoutToken = false }) => {
       try {
@@ -214,18 +244,23 @@ function MainApp() {
     [fetchPostsPage],
   );
 
+  /**
+   * Hook khởi tạo: Tự động tải trang 1 danh sách phòng (sắp xếp theo RankingScore giảm dần)
+   */
   useEffect(() => {
     const fetchRealPosts = async () => {
       try {
         await loadRooms({ endpoint: "/api/posts", params: { sort: "postStat.rankingScore,desc" }, page: 1 });
       } catch {
-        // loadRooms đã log lỗi và xử lý trạng thái
       }
     };
 
     fetchRealPosts();
   }, [user, loadRooms]);
 
+  /**
+   * Gọi API tìm kiếm các phòng trọ lân cận trong bán kính xung quanh tọa độ GPS chỉ định.
+   */
   const fetchNearbyRooms = async (lat, lng, radius = searchRadius) => {
     try {
       await loadRooms({
@@ -252,6 +287,10 @@ function MainApp() {
     }
   };
 
+  /**
+   * Thuật toán tạo mảng hiển thị thanh phân trang thông minh.
+   * Chèn tự động dấu '...' nếu tổng số trang lớn hơn 7 để giao diện gọn gàng.
+   */
   const buildPageRange = () => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -277,6 +316,9 @@ function MainApp() {
     return range;
   };
 
+  /**
+   * Xử lý chuyển trang, gọi lại API loadRooms với trang mới
+   */
   const handlePageChange = async (page) => {
     if (page < 1 || page === currentPage || isLoadingRooms) return;
     if (totalPages && page > totalPages) return;
@@ -288,7 +330,6 @@ function MainApp() {
         page,
       });
     } catch {
-      // loadRooms đã xử lý lỗi và log
     }
   };
 
@@ -298,6 +339,12 @@ function MainApp() {
     maximumAge: 0,
   };
 
+  /**
+   * Luồng xử lý định vị:
+   * 1. Bật HTML5 Geolocation để xin quyền lấy GPS từ thiết bị.
+   * 2. Gọi fetchNearbyRooms và dùng API Goong dịch tọa độ thành địa chỉ thật.
+   * 3. Fallback dùng cached location nếu user từ chối hoặc lỗi.
+   */
   const handleGetLocation = (radiusParam = searchRadius) =>
     enforceAuth(() => {
       setIsLocating(true);
@@ -333,7 +380,6 @@ function MainApp() {
               const formatted = res.data?.results?.[0]?.formatted_address;
               if (formatted) setSearchTerm(formatted);
             } catch {
-              // Keep coordinate fallback
             }
           })();
         },
@@ -359,7 +405,6 @@ function MainApp() {
               return;
             }
           } catch {
-            // no-op
           }
 
           alert("Không thể lấy vị trí nhanh. Vui lòng bật GPS hoặc thử lại.");
@@ -368,7 +413,6 @@ function MainApp() {
         GEOLOCATION_OPTIONS,
       );
     });
-
   // Kéo slider bán kính → tự động xin GPS mới (không cache) rồi search
   const handleRadiusChange = (radius) => {
     if (!navigator.geolocation) return;
@@ -411,6 +455,10 @@ function MainApp() {
     );
   };
 
+  /**
+   * Luồng tìm kiếm đa bộ lọc (Text, Giá, Loại phòng, Tiện ích).
+   * Kết hợp gọi API tìm kiếm gốc và lọc tiếp ở client-side (với mảng tiện ích).
+   */
   const handleSearch = async () =>
     enforceAuth(() => {
       const searchParams = {};
@@ -663,6 +711,10 @@ function MainApp() {
   );
 }
 
+/**
+ * Root Component của ứng dụng, chịu trách nhiệm bọc MainApp bên trong UserProvider
+ * để quản lý và chia sẻ Context trạng thái tài khoản.
+ */
 export default function App() {
   return (
     <UserProvider>

@@ -1,8 +1,16 @@
 import { useUser } from "../context/UserContext";
 import { Heart, ShieldCheck } from "lucide-react";
 
+/**
+ * Component thanh điều hướng (Navbar) cố định trên cùng của ứng dụng
+ * Quản lý việc hiển thị Logo, Avatar người dùng và các nút chức năng tùy theo vai trò
+ */
 const Navbar = ({ onAuthClick, onEditProfileClick, onPricingClick, onMyPostsClick, onSavedPostsClick, onVerifyClick, onAdminClick }) => {
   const { user, logout } = useUser();
+  
+  /**
+   * Xử lý sự kiện khi nhấn vào Logo: Chuyển hướng về trang chủ
+   */
   const goHome = () => {
     window.location.href = "/";
   };

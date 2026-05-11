@@ -19,9 +19,9 @@ import axios from "axios";
 import { useUser } from "../../context/UserContext";
 import { toggleSavePost, isPostSaved } from "./SavedPostsModal";
 
-// ──────────────────────────────────────────────
-//  Component chọn sao (interactive)
-// ──────────────────────────────────────────────
+/**
+ * Component hiển thị danh sách ngôi sao để đánh giá hoặc xem điểm đánh giá
+ */
 function StarPicker({ value, onChange, readonly = false, size = "w-6 h-6" }) {
   const [hovered, setHovered] = useState(0);
   return (
@@ -49,10 +49,13 @@ function StarPicker({ value, onChange, readonly = false, size = "w-6 h-6" }) {
   );
 }
 
-// ──────────────────────────────────────────────
-//  Component hiển thị một đánh giá
-// ──────────────────────────────────────────────
+/**
+ * Component hiển thị thông tin chi tiết của một bình luận/đánh giá
+ */
 function ReviewItem({ review }) {
+  /**
+   * Tính toán khoảng thời gian trôi qua từ lúc tạo đánh giá đến hiện tại (VD: "5 phút trước")
+   */
   const timeAgo = (dateStr) => {
     if (!dateStr) return "";
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -101,9 +104,9 @@ function ReviewItem({ review }) {
   );
 }
 
-// ──────────────────────────────────────────────
-//  Main Component
-// ──────────────────────────────────────────────
+/**
+ * Modal hiển thị thông tin đầy đủ của một bài đăng phòng trọ (Hình ảnh, Giá, Chủ trọ, Bản đồ, Đánh giá)
+ */
 export default function RoomDetailModal({ roomId, onBack }) {
   const { user } = useUser();
   const [room, setRoom] = useState(null);
@@ -129,6 +132,14 @@ export default function RoomDetailModal({ roomId, onBack }) {
   useEffect(() => {
     if (!roomId) return;
     setIsSaved(isPostSaved(roomId, user?.id));
+
+    const handleSavedPostsChanged = (e) => {
+      if (e.detail.postId === roomId) {
+        setIsSaved(e.detail.isSaved);
+      }
+    };
+    window.addEventListener('savedPostsChanged', handleSavedPostsChanged);
+
     // Nếu là LANDLORD thì fetch số lượt lưu bài
     if (user?.role === "LANDLORD") {
       const token = localStorage.getItem("userToken");
@@ -143,8 +154,13 @@ export default function RoomDetailModal({ roomId, onBack }) {
         )
         .catch(() => setSaveCount(null));
     }
+
+    return () => window.removeEventListener('savedPostsChanged', handleSavedPostsChanged);
   }, [roomId, user?.id, user?.role]);
 
+  /**
+   * Xử lý sự kiện lưu/bỏ lưu bài đăng (thả tim) cho người thuê
+   */
   const handleToggleSave = async () => {
     if (!user) {
       alert("Vui lòng đăng nhập để lưu bài yêu thích!");
@@ -158,6 +174,9 @@ export default function RoomDetailModal({ roomId, onBack }) {
 
   // ── Fetch room detail ──
   useEffect(() => {
+    /**
+     * Gọi API lấy thông tin chi tiết của phòng trọ theo ID
+     */
     const fetchRoomDetail = async () => {
       try {
         const token = localStorage.getItem("userToken");
@@ -179,6 +198,9 @@ export default function RoomDetailModal({ roomId, onBack }) {
 
   // ── Fetch reviews ──
   useEffect(() => {
+    /**
+     * Lấy danh sách đánh giá của phòng trọ, fallback về localStorage nếu API lỗi
+     */
     const fetchReviews = async () => {
       if (!roomId) return;
       setIsLoadingReviews(true);
@@ -209,7 +231,9 @@ export default function RoomDetailModal({ roomId, onBack }) {
     fetchReviews();
   }, [roomId]);
 
-  // ── Submit review ──
+  /**
+   * Xử lý gửi đánh giá mới lên hệ thống và cập nhật lại danh sách hiển thị
+   */
   const handleSubmitReview = async () => {
     setSubmitError("");
     if (myRating === 0) {
@@ -239,8 +263,6 @@ export default function RoomDetailModal({ roomId, onBack }) {
       setMyComment("");
       setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (err) {
-      console.warn("API lỗi, lưu review vào localStorage:", err.message);
-      // Fallback: lưu vào localStorage
       const newReview = {
         id: `local_${Date.now()}`,
         rating: myRating,
@@ -302,6 +324,9 @@ export default function RoomDetailModal({ roomId, onBack }) {
     ? `https://www.google.com/maps?q=${encodeURIComponent(mapTarget)}&z=15&output=embed`
     : "";
 
+  /**
+   * Mở Google Maps để chỉ đường từ vị trí hiện tại của người dùng đến phòng trọ
+   */
   const handleOpenMaps = () => {
     if (!hasMapTarget) {
       alert("Địa chỉ hoặc tọa độ của phòng này chưa được cập nhật trên hệ thống!");

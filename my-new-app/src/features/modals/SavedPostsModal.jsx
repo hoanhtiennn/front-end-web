@@ -6,10 +6,16 @@ import axios from "axios";
 //  LocalStorage map: { [postId]: savedPostId }
 //  Dùng savedPostId (ID của SavedPost entity) để DELETE
 // ════════════════════════════════════════════════
+/**
+ * Lấy khóa (key) lưu trữ danh sách ID bài đăng đã lưu trong localStorage dựa trên userId
+ */
 function getSavedMapKey(userId) {
   return userId ? `saved_map_${userId}` : `saved_map_guest`;
 }
 
+/**
+ * Đọc danh sách (map) các bài đăng đã lưu từ localStorage
+ */
 function getSavedMap(userId) {
   try {
     return JSON.parse(localStorage.getItem(getSavedMapKey(userId)) || "{}");
@@ -18,22 +24,31 @@ function getSavedMap(userId) {
   }
 }
 
+/**
+ * Ghi đè danh sách (map) các bài đăng đã lưu vào localStorage
+ */
 function setSavedMap(map, userId) {
   localStorage.setItem(getSavedMapKey(userId), JSON.stringify(map));
 }
 
-// Trả về mảng postId đã lưu
+/**
+ * Trả về mảng các ID bài đăng đã được lưu ở dưới client (localStorage)
+ */
 export function getLocalSavedIds(userId) {
   return Object.keys(getSavedMap(userId));
 }
 
-// Kiểm tra 1 post đã được lưu chưa
+/**
+ * Kiểm tra xem một bài đăng cụ thể đã được lưu (thả tim) hay chưa
+ */
 export function isPostSaved(postId, userId) {
   const map = getSavedMap(userId);
   return postId in map;
 }
 
-// ── Toggle save (API thật + localStorage fallback) ──
+/**
+ * Chuyển đổi trạng thái lưu/bỏ lưu bài đăng, đồng bộ với API backend và fallback về localStorage
+ */
 export async function toggleSavePost(postId, currentlySaved, userId) {
   const token = localStorage.getItem("userToken");
   const map = getSavedMap(userId);
@@ -66,18 +81,22 @@ export async function toggleSavePost(postId, currentlySaved, userId) {
   }
 
   setSavedMap(map, userId);
+  window.dispatchEvent(new CustomEvent('savedPostsChanged', { detail: { postId, isSaved: !currentlySaved } }));
   return !currentlySaved;
 }
 
-// ════════════════════════════════════════════════
-//  SavedPostsModal
-// ════════════════════════════════════════════════
+/**
+ * Modal hiển thị danh sách các bài đăng (phòng trọ) mà người dùng đã lưu (thả tim)
+ */
 export default function SavedPostsModal({ onBack, onOpenRoom, refreshKey }) {
   const [savedPosts, setSavedPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
+    /**
+     * Tải danh sách các bài đăng đã lưu từ API hoặc localStorage
+     */
     const load = async () => {
       setIsLoading(true);
       const token = localStorage.getItem("userToken");
@@ -138,11 +157,17 @@ export default function SavedPostsModal({ onBack, onOpenRoom, refreshKey }) {
     load();
   }, [refreshKey]);
 
+  /**
+   * Xử lý bỏ lưu một bài đăng cụ thể ra khỏi danh sách yêu thích
+   */
   const handleUnsave = async (postId) => {
     await toggleSavePost(postId, true, userId);
     setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
+  /**
+   * Lấy URL ảnh đầu tiên của bài đăng để hiển thị làm ảnh đại diện
+   */
   const getImage = (post) => {
     if (post.images && post.images.length > 0) {
       return post.images[0].url || post.images[0].imageUrl;

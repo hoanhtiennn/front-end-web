@@ -1,3 +1,6 @@
+/**
+ * Component hiển thị phần chân trang (footer) chung của website
+ */
 const Footer = () => {
   return (
     <footer className="bg-gray-100 border-t border-gray-300 py-8 text-center text-sm text-gray-600">

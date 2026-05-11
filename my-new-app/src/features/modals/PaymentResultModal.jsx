@@ -5,13 +5,20 @@ import { useUser } from "../../context/UserContext";
 
 const AUTO_REDIRECT_SECONDS = 5;
 
+/**
+ * Modal hiển thị kết quả sau khi thanh toán qua VNPay (Thành công/Thất bại)
+ */
 export default function PaymentResultModal() {
   const [status, setStatus] = useState("loading"); // 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("Đang xử lý kết quả thanh toán...");
   const [countdown, setCountdown] = useState(AUTO_REDIRECT_SECONDS);
   const { user, updateUser } = useUser();
 
-  // Xử lý xác thực kết quả thanh toán từ VNPay
+  // Luồng xử lý kết quả thanh toán VNPay:
+  // 1. Kiểm tra tham số vnp_ResponseCode trên URL.
+  // 2. Gọi API backend (/api/payments/return) để xác thực chữ ký.
+  // 3. Nếu thành công (00), gọi API lấy lại thông tin user mới nhất để cập nhật gói cước (plan).
+  // 4. Nếu thất bại, hiển thị lỗi tương ứng dựa trên mã lỗi VNPay.
   useEffect(() => {
     const processPayment = async () => {
       try {
@@ -93,6 +100,9 @@ export default function PaymentResultModal() {
     return () => clearInterval(timer);
   }, [status]);
 
+  /**
+   * Quay về trang chủ và dọn dẹp các tham số VNPay trên URL
+   */
   const goHome = () => {
     // Xóa query params VNPay khỏi URL mà không reload trang
     window.history.replaceState({}, document.title, "/");

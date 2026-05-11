@@ -28,6 +28,9 @@ const STATUS_CONFIG = {
   },
 };
 
+/**
+ * Component hiển thị badge trạng thái màu sắc tùy theo trạng thái xác minh
+ */
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || {
     label: status,
@@ -40,6 +43,9 @@ function StatusBadge({ status }) {
   );
 }
 
+/**
+ * Hàm hỗ trợ định dạng ngày giờ chuẩn Việt Nam
+ */
 function formatDate(dt) {
   if (!dt) return "—";
   return new Date(dt).toLocaleString("vi-VN", {
@@ -48,6 +54,9 @@ function formatDate(dt) {
   });
 }
 
+/**
+ * Component quản lý quá trình xác minh giấy tờ (CCCD) của các chủ trọ
+ */
 export default function AdminVerifications() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +71,9 @@ export default function AdminVerifications() {
 
   const token = () => localStorage.getItem("userToken");
 
+  /**
+   * Tải toàn bộ danh sách yêu cầu xác minh (có hỗ trợ lọc theo trạng thái)
+   */
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
@@ -93,9 +105,19 @@ export default function AdminVerifications() {
     fetchAll();
   }, [fetchAll]);
 
+  /**
+   * Hiển thị popup xác nhận hoặc cảnh báo tùy chỉnh
+   */
   const showConfirm = (opts) => setConfirmDialog(opts);
+  
+  /**
+   * Đóng popup xác nhận
+   */
   const closeConfirm = () => setConfirmDialog(null);
 
+  /**
+   * Xử lý xác nhận phê duyệt (Approve) một yêu cầu xác minh CCCD
+   */
   const handleApprove = (id) => {
     showConfirm({
       title: "Xác nhận Duyệt",
@@ -128,6 +150,9 @@ export default function AdminVerifications() {
     });
   };
 
+  /**
+   * Xử lý từ chối (Reject) một yêu cầu xác minh CCCD kèm theo lý do
+   */
   const handleReject = async (id) => {
     if (!rejectReason.trim()) {
       showConfirm({
