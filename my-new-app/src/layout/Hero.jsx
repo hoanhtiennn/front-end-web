@@ -1,5 +1,9 @@
 import { Search } from "lucide-react";
 
+/**
+ * Component hiển thị Banner nổi bật (Hero Section) ở ngay dưới thanh Navbar trên trang chủ
+ * Thiết kế với background ảnh lớn và hiệu ứng mờ (Glassmorphism) để tạo điểm nhấn thị giác
+ */
 const Hero = () => (
   <header className="relative mx-auto mt-2 md:mt-4 w-[calc(100%-2rem)] md:w-[calc(100%-4rem)] max-w-[1400px] h-[400px] md:h-[500px] rounded-4xl md:rounded-5xl shadow-2xl overflow-hidden">
     {/* Photo Background */}

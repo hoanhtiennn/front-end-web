@@ -9,6 +9,9 @@ const PLAN_BADGE = {
   ULTRA: { label: "ULTRA", color: "bg-cyan-50 text-cyan-700 border-cyan-300" },
 };
 
+/**
+ * Component hiển thị một trường nhập liệu với icon và nhãn (label) đi kèm
+ */
 const InputField = ({ icon: Icon, label, note, ...props }) => (
   <div className="space-y-1.5">
     <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -30,6 +33,9 @@ const InputField = ({ icon: Icon, label, note, ...props }) => (
   </div>
 );
 
+/**
+ * Modal cho phép người dùng chỉnh sửa thông tin cá nhân, avatar hoặc xóa tài khoản
+ */
 const EditProfileModal = ({ onBack }) => {
   const { user, updateUser, logout } = useUser();
   const [loading, setLoading] = useState(false);
@@ -46,6 +52,9 @@ const EditProfileModal = ({ onBack }) => {
 
   const plan = PLAN_BADGE[user.plan] || PLAN_BADGE.FREE;
 
+  /**
+   * Xử lý khi người dùng chọn ảnh avatar mới: đọc file, resize (nếu cần) và hiển thị preview
+   */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -73,6 +82,9 @@ const EditProfileModal = ({ onBack }) => {
     reader.readAsDataURL(file);
   };
 
+  /**
+   * Xử lý gửi form cập nhật thông tin cá nhân lên server
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -114,6 +126,9 @@ const EditProfileModal = ({ onBack }) => {
     }
   };
 
+  /**
+   * Xử lý yêu cầu xóa tài khoản vĩnh viễn
+   */
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try {

@@ -1,6 +1,9 @@
 import RoomCard from "../RoomCard";
 import AddRoomCard from "../AddRoomCard";
 
+/**
+ * Component bố cục dạng lưới hiển thị danh sách các thẻ phòng trọ (RoomCard)
+ */
 const RoomGrid = ({ user, filteredRooms, onAddRoomClick }) => {
   return (
     <main className="container mx-auto px-6 py-16 md:py-24">

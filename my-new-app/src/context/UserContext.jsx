@@ -6,6 +6,11 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
+  // Luồng lấy thông tin người dùng khi ứng dụng khởi chạy:
+  // 1. Kiểm tra token trong localStorage.
+  // 2. Nếu có token, gọi API /api/users/me để lấy thông tin.
+  // 3. Chuẩn hóa dữ liệu trả về và lưu vào state `user`.
+  // 4. Nếu lỗi (token hết hạn), xóa token khỏi localStorage.
   useEffect(() => {
     const token = localStorage.getItem("userToken");
     if (token) {
@@ -13,7 +18,6 @@ export const UserProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => {
-        // Backend có thể wrap response trong { code, result: {...} } hoặc { code, data: {...} }
         const u = res.data?.result || res.data?.data || res.data;
         setUser({ 
           id: u.id, 
@@ -35,13 +39,22 @@ export const UserProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Lưu thông tin người dùng vào state sau khi đăng nhập thành công
+   */
   const login = (userData) => setUser(userData);
   
+  /**
+   * Xóa token khỏi localStorage và reset state `user` khi đăng xuất
+   */
   const logout = () => {
     localStorage.removeItem("userToken");
     setUser(null);
   };
 
+  /**
+   * Cập nhật từng phần thông tin người dùng (VD: đổi tên, avatar)
+   */
   const updateUser = (updatedData) => {
     setUser(prev => ({ ...prev, ...updatedData }));
   };
@@ -53,4 +66,7 @@ export const UserProvider = ({ children }) => {
   );
 };
 
+/**
+ * Hook custom để sử dụng UserContext nhanh chóng
+ */
 export const useUser = () => useContext(UserContext);

@@ -30,10 +30,16 @@ const PLAN_FEATURES = {
   ],
 };
 
+/**
+ * Định dạng số tiền tệ sang chuẩn Việt Nam Đồng (VNĐ)
+ */
 function formatVND(amount) {
   return Number(amount).toLocaleString("vi-VN") + "đ";
 }
 
+/**
+ * Trích xuất email từ payload của JWT token mà không cần gọi API
+ */
 function getEmailFromToken(token) {
   try {
     if (!token) return "";
@@ -47,6 +53,9 @@ function getEmailFromToken(token) {
   }
 }
 
+/**
+ * Modal cho phép người dùng chọn và mua gói dịch vụ (PRO/ULTRA)
+ */
 export default function PurchasePlanModal({ onBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMonthly, setIsMonthly] = useState(true);
@@ -81,7 +90,9 @@ export default function PurchasePlanModal({ onBack }) {
       .finally(() => setIsFetchingPlans(false));
   }, []);
 
-  // Helper: lấy giá từ DB hoặc fallback
+  /**
+   * Lấy giá tiền của một gói dựa trên DB hoặc giá trị mặc định (fallback)
+   */
   const getPlanPrice = (planKey, monthly) => {
     const fromDb = plansData?.[planKey];
     if (fromDb) {
@@ -92,11 +103,17 @@ export default function PurchasePlanModal({ onBack }) {
     return monthly ? FALLBACK_PLANS[planKey]?.monthly ?? 0 : FALLBACK_PLANS[planKey]?.yearly ?? 0;
   };
 
+  /**
+   * Lấy số lượng bài đăng tối đa của một gói
+   */
   const getMaxPosts = (planKey) => {
     const fromDb = plansData?.[planKey];
     return fromDb?.maxPosts ?? fromDb?.max_posts ?? FALLBACK_PLANS[planKey]?.maxPostsMonthly ?? null;
   };
 
+  /**
+   * Xử lý khi nhấn nút Mua gói: Gọi API tạo phiên thanh toán và chuyển hướng đến VNPay
+   */
   const handlePurchase = async (planId) => {
     setIsLoading(true);
     try {

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Plus, Trash2, Loader2, AlertCircle, Tag } from "lucide-react";
 
+/**
+ * Component quản lý danh mục các tiện ích (Amenities) của hệ thống
+ */
 export default function AdminAmenities() {
   const [amenities, setAmenities] = useState([]);
   const [newType, setNewType] = useState("");
@@ -12,7 +15,9 @@ export default function AdminAmenities() {
 
   const token = () => localStorage.getItem("userToken");
 
-  // ── Lấy danh sách tiện ích từ DB ─────────────────────────────────────────
+  /**
+   * Gọi API lấy danh sách toàn bộ tiện ích từ cơ sở dữ liệu
+   */
   const fetchAmenities = useCallback(async () => {
     try {
       setLoading(true);
@@ -48,7 +53,9 @@ export default function AdminAmenities() {
     fetchAmenities();
   }, [fetchAmenities]);
 
-  // ── Thêm tiện ích mới ─────────────────────────────────────────────────────
+  /**
+   * Xử lý gửi yêu cầu thêm một tiện ích mới lên server
+   */
   const handleAdd = async () => {
     if (!newType.trim()) return;
     try {
@@ -68,7 +75,9 @@ export default function AdminAmenities() {
     }
   };
 
-  // ── Xóa tiện ích ─────────────────────────────────────────────────────────
+  /**
+   * Xử lý gửi yêu cầu xóa một tiện ích dựa trên ID
+   */
   const handleDelete = async (id) => {
     if (!window.confirm("Xác nhận xóa tiện ích này?")) return;
     try {

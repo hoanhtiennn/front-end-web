@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Edit2, Package, Check, AlertCircle, X, Save } from "lucide-react";
 
+/**
+ * Component quản lý Cấu hình Gói Dịch Vụ (Plans) - Admin
+ */
 export default function AdminPlans() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +16,9 @@ export default function AdminPlans() {
   
   const token = () => localStorage.getItem("userToken");
 
+  /**
+   * Lấy cấu hình các gói dịch vụ từ server. Xử lý fallback nếu dữ liệu bị double-serialized.
+   */
   const fetchPlans = useCallback(async () => {
     try {
       setLoading(true);
@@ -60,6 +66,9 @@ export default function AdminPlans() {
     }
   }, []);
 
+  /**
+   * Cung cấp dữ liệu mẫu phòng trường hợp API lỗi hoặc chưa hoàn thiện
+   */
   const setFallbackPlans = () => {
     setPlans([
       { id: "FREE", displayName: "FREE", priceMonthly: 0, priceYearly: 0, maxPosts: 3, maxImages: 3 },
@@ -72,6 +81,9 @@ export default function AdminPlans() {
     fetchPlans();
   }, [fetchPlans]);
 
+  /**
+   * Gửi cấu hình chỉnh sửa của gói lên server để lưu lại
+   */
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -92,6 +104,9 @@ export default function AdminPlans() {
     }
   };
 
+  /**
+   * Cập nhật từng trường thông tin khi người dùng sửa trong form
+   */
   const handleEditChange = (field, value) => {
     setEditingPlan(prev => ({
       ...prev,
@@ -99,6 +114,9 @@ export default function AdminPlans() {
     }));
   };
 
+  /**
+   * Hàm hỗ trợ định dạng số tiền VND
+   */
   const formatPrice = (price) => {
     if (!price || price === 0) return "0đ";
     return price.toLocaleString("vi-VN") + "đ";

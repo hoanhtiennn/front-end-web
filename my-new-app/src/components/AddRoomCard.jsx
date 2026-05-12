@@ -1,3 +1,6 @@
+/**
+ * Component hiển thị thẻ (card) dạng nút bấm lớn để thêm phòng trọ mới
+ */
 const AddRoomCard = ({ onClick }) => {
   return (
     <div

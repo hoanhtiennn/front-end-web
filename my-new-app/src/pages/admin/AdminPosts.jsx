@@ -15,11 +15,17 @@ const ROOM_TYPE_MAP = {
   STUDIO:    "Studio",
 };
 
+/**
+ * Trình bày số tiền dưới dạng chuỗi VND
+ */
 function formatPrice(price) {
   if (!price) return "—";
   return new Intl.NumberFormat("vi-VN").format(price) + " đ";
 }
 
+/**
+ * Định dạng ngày tháng
+ */
 function formatDate(dt) {
   if (!dt) return "—";
   return new Date(dt).toLocaleDateString("vi-VN");
@@ -27,6 +33,9 @@ function formatDate(dt) {
 
 const PAGE_SIZE = 10;
 
+/**
+ * Component quản lý toàn bộ bài đăng trên hệ thống (dành cho Admin)
+ */
 export default function AdminPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +50,9 @@ export default function AdminPosts() {
 
   const token = () => localStorage.getItem("userToken");
 
+  /**
+   * Tải danh sách bài đăng từ server với phân trang và bộ lọc trạng thái (ACTIVE/CLOSED).
+   */
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);

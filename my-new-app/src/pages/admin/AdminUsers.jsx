@@ -12,6 +12,9 @@ import {
   Eye,
 } from "lucide-react";
 
+/**
+ * Component quản lý danh sách Người dùng trong hệ thống (dành cho Admin)
+ */
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +26,9 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
+  /**
+   * Gọi API lấy danh sách toàn bộ users. Có fallback dữ liệu phòng khi gọi thất bại.
+   */
   const fetchUsers = async () => {
     try {
       setLoading(true);

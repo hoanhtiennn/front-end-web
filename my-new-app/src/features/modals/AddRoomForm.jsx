@@ -30,6 +30,9 @@ const AMENITIES = [
   { icon: "📺", label: "Tivi" },
 ];
 
+/**
+ * Component hiển thị tiêu đề của từng phần trong form
+ */
 const SectionTitle = ({ icon: Icon, children }) => (
   <div className="flex items-center gap-2 mb-3">
     <div className="w-7 h-7 rounded-lg bg-cyan-50 border border-cyan-200 flex items-center justify-center">
@@ -39,6 +42,9 @@ const SectionTitle = ({ icon: Icon, children }) => (
   </div>
 );
 
+/**
+ * Component bao bọc mỗi trường nhập liệu, hiển thị label nếu có
+ */
 const Field = ({ label, children }) => (
   <div className="space-y-1.5">
     {label && <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
@@ -67,6 +73,9 @@ const AddRoomForm = ({ onBack, existingPost }) => {
   );
   // Khi edit: backend trả về address là chuỗi đầy đủ (VD: "123 Lê Lợi, Phường 1, Q.1, TP.HCM")
   // Cần tách ra phần địa chỉ thuần tuý (số nhà + đường) để tránh bị cộng dồn khi submit
+  /**
+   * Tách phần số nhà/đường ra khỏi địa chỉ đầy đủ bằng cách loại bỏ phường, quận, thành phố ở cuối chuỗi
+   */
   const parseStreetAddress = (fullAddr, ward, district, city) => {
     if (!fullAddr) return "";
     let street = fullAddr;
@@ -104,20 +113,41 @@ const AddRoomForm = ({ onBack, existingPost }) => {
   const remaining   = user?.remainingPosts ?? 0;
   const isExhausted = !isEditMode && remaining <= 0;
 
+  /**
+   * Bật/tắt trạng thái chọn của một tiện ích trong mảng selectedAmenities
+   */
   const toggleAmenity = (label) =>
     setSelectedAmenities(prev =>
       prev.includes(label) ? prev.filter(a => a !== label) : [...prev, label]
     );
 
+  /**
+   * Xử lý khi người dùng nhập dữ liệu vào các ô input text/select
+   */
   const handleChange = (e) =>
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+  /**
+   * Xử lý khi người dùng chọn ảnh: lưu file vào state và tạo URL để xem trước (preview)
+   */
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     setImages(files);
     setImagePreviews(files.map(f => URL.createObjectURL(f)));
   };
 
+  // Luồng xử lý đăng bài / cập nhật bài viết:
+  // 1. Kiểm tra số lượt đăng còn lại (nếu thêm mới).
+  // 2. Gộp địa chỉ đầy đủ để gọi API Geocoding lấy vĩ độ/kinh độ (lat/lng) nếu chưa có.
+  // 3. Sử dụng FormData để gửi thông tin và hình ảnh.
+  // 4. Gọi API: PUT (nếu đang sửa) hoặc POST (nếu thêm mới).
+  // 5. Cập nhật số lượt đăng còn lại và hiển thị thông báo thành công.
+  /**
+   * Luồng xử lý chính khi submit form:
+   * 1. Lấy tọa độ (lat/lng) từ địa chỉ nếu chưa có.
+   * 2. Tạo FormData chứa thông tin và ảnh.
+   * 3. Gọi API POST (tạo mới) hoặc PUT (cập nhật).
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isExhausted) { setError("Bạn đã hết lượt đăng bài. Vui lòng nâng cấp gói!"); return; }

@@ -3,6 +3,9 @@ import { useState, useActionState, useRef, useEffect } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useUser } from "../../context/UserContext";
 
+/**
+ * Giải mã JWT token để lấy payload (thông tin user) mà không cần thư viện bên thứ 3
+ */
 const getTokenPayload = (token) => {
   if (!token) return {};
   try {
@@ -35,6 +38,9 @@ const AuthPage = ({ mode, onBack }) => {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
 
+  /**
+   * Xử lý luồng Đăng nhập & Đăng ký chính qua form (validate, gọi API, lưu token)
+   */
   const [state, formAction, isPending] = useActionState(
     async (prev, formData) => {
       const email = formData.get("email");
@@ -148,6 +154,10 @@ const AuthPage = ({ mode, onBack }) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState("");
 
+  /**
+   * Xử lý đăng nhập thông qua tài khoản Google
+   * Lấy access_token từ Google và gửi lên Backend để xác thực/tạo tài khoản
+   */
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -205,6 +215,9 @@ const AuthPage = ({ mode, onBack }) => {
 
   // --- LUỒNG QUÊN MẬT KHẨU ---
 
+  /**
+   * Xử lý gửi email yêu cầu cấp mã OTP quên mật khẩu
+   */
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setForgotError("");
@@ -220,6 +233,9 @@ const AuthPage = ({ mode, onBack }) => {
     }
   };
 
+  /**
+   * Xử lý xác thực mã OTP 6 số người dùng nhập vào
+   */
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setForgotError("");
@@ -239,6 +255,9 @@ const AuthPage = ({ mode, onBack }) => {
     }
   };
 
+  /**
+   * Xử lý cập nhật mật khẩu mới sau khi đã xác thực OTP thành công
+   */
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setForgotError("");
@@ -261,6 +280,9 @@ const AuthPage = ({ mode, onBack }) => {
     }
   };
 
+  /**
+   * Xử lý sự kiện nhập ký tự vào ô OTP (chỉ nhận số, tự động nhảy sang ô tiếp theo)
+   */
   const handleOtpChange = (val, idx) => {
     if (!/^\d*$/.test(val)) return;
     const next = [...otp];
@@ -269,6 +291,9 @@ const AuthPage = ({ mode, onBack }) => {
     if (val && idx < 5) document.getElementById(`otp-${idx + 1}`)?.focus();
   };
 
+  /**
+   * Xử lý sự kiện xóa (Backspace) trên ô OTP để tự động lùi về ô trước đó
+   */
   const handleOtpKeyDown = (e, idx) => {
     if (e.key === "Backspace" && !otp[idx] && idx > 0) {
       document.getElementById(`otp-${idx - 1}`)?.focus();
