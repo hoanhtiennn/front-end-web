@@ -17,7 +17,7 @@ const MyPostsModal = ({ onBack, onEditPost, onViewPost }) => {
   const [deletingId, setDeletingId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [saveCounts, setSaveCounts] = useState({}); // { postId: count }
+  const [saveCounts, setSaveCounts] = useState({});
 
   useEffect(() => { fetchMyPosts(); }, []);
 

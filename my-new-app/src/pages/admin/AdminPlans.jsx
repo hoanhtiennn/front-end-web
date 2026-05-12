@@ -58,7 +58,6 @@ export default function AdminPlans() {
     } catch (err) {
       console.error(err);
       alert("Lỗi khi gọi GET /api/plans:\n" + (err.response?.data?.message || err.message));
-      // Fallback cho tới khi backend code xong
       setFallbackPlans();
       setError("Không thể tải cấu hình gói từ Server. Đang hiển thị dữ liệu mẫu.");
     } finally {
@@ -66,9 +65,6 @@ export default function AdminPlans() {
     }
   }, []);
 
-  /**
-   * Cung cấp dữ liệu mẫu phòng trường hợp API lỗi hoặc chưa hoàn thiện
-   */
   const setFallbackPlans = () => {
     setPlans([
       { id: "FREE", displayName: "FREE", priceMonthly: 0, priceYearly: 0, maxPosts: 3, maxImages: 3 },
@@ -92,7 +88,7 @@ export default function AdminPlans() {
         headers: { Authorization: `Bearer ${token()}` }
       });
       setEditingPlan(null);
-      fetchPlans(); // Refresh
+      fetchPlans();
       setError(null);
       alert("Cập nhật thành công!");
     } catch (err) {

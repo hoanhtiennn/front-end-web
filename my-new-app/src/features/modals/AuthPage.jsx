@@ -32,7 +32,6 @@ const AuthPage = ({ mode, onBack }) => {
     selectedRoleRef.current = selectedRole;
   }, [selectedRole]);
 
-  // State cho luồng quên mật khẩu
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotError, setForgotError] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -47,7 +46,6 @@ const AuthPage = ({ mode, onBack }) => {
       const password = formData.get("password");
       const role = formData.get("role");
 
-      // Validate phía client
       if (!email.endsWith("@gmail.com")) {
         return { error: "Email phải là địa chỉ Gmail (@gmail.com)!" };
       }
@@ -69,9 +67,7 @@ const AuthPage = ({ mode, onBack }) => {
           const { token } = response.data;
           const payload = getTokenPayload(token);
           const backendRole = payload.role || response.data.role;
-          
-          // Kiểm tra xem backendRole có khớp với vai trò (Người thuê / Chủ trọ) đang tick không
-          // (Bỏ qua kiểm tra nếu tài khoản là ADMIN hệ thống)
+        
           if (backendRole && backendRole !== "ADMIN" && backendRole !== role) {
             const dbRoleName = backendRole === "LANDLORD" ? "Chủ trọ" : "Người thuê";
             return { error: `Sai vai trò! Tài khoản này là "${dbRoleName}". Vui lòng chọn đúng màn hình đăng nhập.` };

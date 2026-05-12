@@ -104,7 +104,6 @@ export default function PaymentResultModal() {
    * Quay về trang chủ và dọn dẹp các tham số VNPay trên URL
    */
   const goHome = () => {
-    // Xóa query params VNPay khỏi URL mà không reload trang
     window.history.replaceState({}, document.title, "/");
     window.location.reload();
   };

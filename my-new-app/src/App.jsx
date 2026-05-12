@@ -44,9 +44,8 @@ function MainApp() {
   const [editingPost, setEditingPost] = useState(null);
   const [showVerification, setShowVerification] = useState(false);
   const [isAdminView, setIsAdminView] = useState(false);
-  // Vị trí GPS đã xác nhận (null = chưa từng click "Gần tôi")
   const [confirmedLocation, setConfirmedLocation] = useState(null);
-  const [locationToast, setLocationToast] = useState(null); // toast nhỏ khi GPS lỗi
+  const [locationToast, setLocationToast] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -59,7 +58,7 @@ function MainApp() {
   const prevSearchTerm = useRef("");
   const prevFilters = useRef(filters);
 
-  const DEFAULT_PAGE_SIZE = 16;
+  const DEFAULT_PAGE_SIZE = 15;
 
   const isPaymentReturn = new URLSearchParams(window.location.search).has(
     "vnp_ResponseCode",
@@ -152,8 +151,20 @@ function MainApp() {
       planType: p.userPlan || p.plan || (p.user && p.user.plan) || "FREE",
       isOwnerVerified: p.user?.isVerified || p.ownerVerified || false,
       amenities: Array.isArray(p.amenities) ? p.amenities : [],
-      viewCount: p.postStat?.viewCount ?? p.postStats?.viewCount ?? p.viewCount ?? p.view_count ?? p.stats?.viewCount ?? 0,
-      rankingScore: p.postStat?.rankingScore ?? p.postStats?.rankingScore ?? p.rankingScore ?? p.ranking_score ?? p.stats?.rankingScore ?? 0,
+      viewCount:
+        p.postStat?.viewCount ??
+        p.postStats?.viewCount ??
+        p.viewCount ??
+        p.view_count ??
+        p.stats?.viewCount ??
+        0,
+      rankingScore:
+        p.postStat?.rankingScore ??
+        p.postStats?.rankingScore ??
+        p.rankingScore ??
+        p.ranking_score ??
+        p.stats?.rankingScore ??
+        0,
     };
   };
 
@@ -212,12 +223,12 @@ function MainApp() {
         });
 
         const planPriority = { ULTRA: 2, PRO: 1, FREE: 0 };
-        const mappedRooms = items.map(mapPostToRoom)
-          .sort((a, b) => {
-            const tierDiff = (planPriority[b.planType] ?? 0) - (planPriority[a.planType] ?? 0);
-            if (tierDiff !== 0) return tierDiff;
-            return (b.rankingScore ?? 0) - (a.rankingScore ?? 0);
-          });
+        const mappedRooms = items.map(mapPostToRoom).sort((a, b) => {
+          const tierDiff =
+            (planPriority[b.planType] ?? 0) - (planPriority[a.planType] ?? 0);
+          if (tierDiff !== 0) return tierDiff;
+          return (b.rankingScore ?? 0) - (a.rankingScore ?? 0);
+        });
 
         setRooms(mappedRooms);
         setCurrentPage(page);
@@ -253,9 +264,12 @@ function MainApp() {
   useEffect(() => {
     const fetchRealPosts = async () => {
       try {
-        await loadRooms({ endpoint: "/api/posts", params: { sort: "postStat.rankingScore,desc" }, page: 1 });
-      } catch {
-      }
+        await loadRooms({
+          endpoint: "/api/posts",
+          params: { sort: "postStat.rankingScore,desc" },
+          page: 1,
+        });
+      } catch {}
     };
 
     fetchRealPosts();
@@ -332,8 +346,7 @@ function MainApp() {
         params: currentParams,
         page,
       });
-    } catch {
-    }
+    } catch {}
   };
 
   const GEOLOCATION_OPTIONS = {
@@ -382,8 +395,7 @@ function MainApp() {
               );
               const formatted = res.data?.results?.[0]?.formatted_address;
               if (formatted) setSearchTerm(formatted);
-            } catch {
-            }
+            } catch {}
           })();
         },
         () => {
@@ -401,14 +413,16 @@ function MainApp() {
                 `${Number(cached.latitude).toFixed(6)}, ${Number(cached.longitude).toFixed(6)}`,
               );
               // Cấp nhật confirmedLocation từ cache hợp lệ
-              setConfirmedLocation({ lat: cached.latitude, lng: cached.longitude });
+              setConfirmedLocation({
+                lat: cached.latitude,
+                lng: cached.longitude,
+              });
               fetchNearbyRooms(cached.latitude, cached.longitude).finally(() =>
                 setIsLocating(false),
               );
               return;
             }
-          } catch {
-          }
+          } catch {}
 
           alert("Không thể lấy vị trí nhanh. Vui lòng bật GPS hoặc thử lại.");
           setIsLocating(false);
@@ -434,13 +448,16 @@ function MainApp() {
         // Reverse geocode địa chỉ (không block search)
         const GOONG_KEY = import.meta.env.VITE_GOONG_API_KEY;
         if (GOONG_KEY?.trim()) {
-          axios.get(
-            `https://rsapi.goong.io/Geocode?latlng=${lat},${lng}&api_key=${GOONG_KEY.trim()}`,
-            { timeout: 3000 },
-          ).then(r => {
-            const addr = r.data?.results?.[0]?.formatted_address;
-            if (addr) setSearchTerm(addr);
-          }).catch(() => {});
+          axios
+            .get(
+              `https://rsapi.goong.io/Geocode?latlng=${lat},${lng}&api_key=${GOONG_KEY.trim()}`,
+              { timeout: 3000 },
+            )
+            .then((r) => {
+              const addr = r.data?.results?.[0]?.formatted_address;
+              if (addr) setSearchTerm(addr);
+            })
+            .catch(() => {});
         }
         fetchNearbyRooms(lat, lng, radius).finally(() => setIsLocating(false));
       },
@@ -448,7 +465,11 @@ function MainApp() {
         // GPS bị từ chối — nếu có vị trí cũ thì dùng lại, không mở trang mới
         setIsLocating(false);
         if (confirmedLocation) {
-          fetchNearbyRooms(confirmedLocation.lat, confirmedLocation.lng, radius);
+          fetchNearbyRooms(
+            confirmedLocation.lat,
+            confirmedLocation.lng,
+            radius,
+          );
         } else {
           setLocationToast("📍 Bật GPS để tìm phòng gần đây");
           setTimeout(() => setLocationToast(null), 3000);
@@ -506,18 +527,19 @@ function MainApp() {
             (room.amenities || []).map((a) => {
               const raw = a?.type || a?.name || a?.label || a || "";
               return raw.toString().trim().toLowerCase();
-            })
+            }),
           );
 
           return filters.amenities.every((sel) =>
-            roomAmenityNames.has(sel.trim().toLowerCase())
+            roomAmenityNames.has(sel.trim().toLowerCase()),
           );
         });
 
         // Sắp xếp theo plan/score như loadRooms
         const planPriority = { ULTRA: 2, PRO: 1, FREE: 0 };
         filtered.sort((a, b) => {
-          const tierDiff = (planPriority[b.planType] ?? 0) - (planPriority[a.planType] ?? 0);
+          const tierDiff =
+            (planPriority[b.planType] ?? 0) - (planPriority[a.planType] ?? 0);
           if (tierDiff !== 0) return tierDiff;
           return (b.rankingScore ?? 0) - (a.rankingScore ?? 0);
         });

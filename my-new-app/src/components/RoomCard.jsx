@@ -35,7 +35,7 @@ const RoomCard = ({ room, index, onClick }) => {
    * Xử lý sự kiện thả tim/bỏ tim (lưu bài đăng vào danh sách yêu thích)
    */
   const handleToggleSave = async (e) => {
-    e.stopPropagation(); // Không mở modal chi tiết
+    e.stopPropagation();
     const token = localStorage.getItem("userToken");
     if (!token) {
       alert("Vui lòng đăng nhập để lưu bài yêu thích!");
@@ -61,9 +61,7 @@ const RoomCard = ({ room, index, onClick }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-black/30 opacity-60 group-hover:opacity-40 transition-opacity duration-500"></div>
 
-        {/* Top row: badge + price */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start gap-2 z-10">
-          {/* Plan badge */}
           {room.planType === "ULTRA" ? (
             <span className="bg-gradient-to-r from-cyan-400 to-blue-600 px-3 py-1 text-[11px] font-black text-white rounded-full uppercase tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.6)] border border-cyan-300">
               💎 ULTRA
@@ -89,7 +87,6 @@ const RoomCard = ({ room, index, onClick }) => {
           </div>
         </div>
 
-        {/* Heart button */}
         <div className="absolute bottom-4 right-4 z-10">
           <button
             onClick={handleToggleSave}
@@ -108,7 +105,6 @@ const RoomCard = ({ room, index, onClick }) => {
           </button>
         </div>
 
-        {/* Verified badge - góc dưới trái ảnh */}
         {room.isOwnerVerified && (
           <div className="absolute bottom-4 left-4 z-10">
             <span className="flex items-center gap-1 bg-emerald-500/90 backdrop-blur-md text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-lg border border-emerald-400/50">

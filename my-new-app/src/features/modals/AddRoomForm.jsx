@@ -63,16 +63,12 @@ const AddRoomForm = ({ onBack, existingPost }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [images, setImages] = useState([]);
-  // Nếu edit mode: hiển thị ảnh cũ làm preview
   const [imagePreviews, setImagePreviews] = useState(
     existingPost?.images?.map(img => img.url || img.imageUrl).filter(Boolean) || []
   );
-  // Nếu edit mode: pre-fill tiện ích cũ
   const [selectedAmenities, setSelectedAmenities] = useState(
     existingPost?.amenities?.map(a => a.type || a.name || a).filter(Boolean) || []
   );
-  // Khi edit: backend trả về address là chuỗi đầy đủ (VD: "123 Lê Lợi, Phường 1, Q.1, TP.HCM")
-  // Cần tách ra phần địa chỉ thuần tuý (số nhà + đường) để tránh bị cộng dồn khi submit
   /**
    * Tách phần số nhà/đường ra khỏi địa chỉ đầy đủ bằng cách loại bỏ phường, quận, thành phố ở cuối chuỗi
    */
@@ -97,7 +93,6 @@ const AddRoomForm = ({ onBack, existingPost }) => {
   const [formData, setFormData] = useState({
     title:       existingPost?.title || "",
     description: existingPost?.description || "",
-    // Nếu có ward/district/city riêng thì tách phần street ra khỏi address tổng hợp
     address:     (_ward || _district || _city)
                    ? parseStreetAddress(existingPost?.address || "", _ward, _district, _city)
                    : (existingPost?.address || ""),
@@ -375,7 +370,7 @@ const AddRoomForm = ({ onBack, existingPost }) => {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Giá thuê (VNĐ/tháng)">
                   <div className="relative">
-                    <input type="number" name="price" required value={formData.price}
+                    <input type="number" name="price" required min="0" value={formData.price}
                       onChange={handleChange} placeholder="VD: 3000000"
                       className={`${inputCls} pr-12`} />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">VNĐ</span>
@@ -383,7 +378,7 @@ const AddRoomForm = ({ onBack, existingPost }) => {
                 </Field>
                 <Field label="Diện tích (m²)">
                   <div className="relative">
-                    <input type="number" name="area" required value={formData.area}
+                    <input type="number" name="area" required min="0" value={formData.area}
                       onChange={handleChange} placeholder="VD: 20"
                       className={`${inputCls} pr-10`} />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">m²</span>
