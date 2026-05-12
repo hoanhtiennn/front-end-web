@@ -128,12 +128,24 @@ const AddRoomForm = ({ onBack, existingPost }) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   /**
-   * Xử lý khi người dùng chọn ảnh: lưu file vào state và tạo URL để xem trước (preview)
+   * Xử lý khi người dùng chọn ảnh: CỘNG DỒN file mới vào danh sách hiện tại
+   * (không ghi đè) để hỗ trợ chọn nhiều lần.
    */
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    setImages(files);
-    setImagePreviews(files.map(f => URL.createObjectURL(f)));
+    const newFiles = Array.from(e.target.files || []);
+    if (newFiles.length === 0) return;
+    setImages(prev => [...prev, ...newFiles]);
+    setImagePreviews(prev => [...prev, ...newFiles.map(f => URL.createObjectURL(f))]);
+    // Reset input để có thể chọn lại cùng file nếu muốn
+    e.target.value = "";
+  };
+
+  /**
+   * Xóa một ảnh khỏi danh sách theo index
+   */
+  const removeImage = (idx) => {
+    setImages(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   // Luồng xử lý đăng bài / cập nhật bài viết:
@@ -422,9 +434,20 @@ const AddRoomForm = ({ onBack, existingPost }) => {
               {imagePreviews.length > 0 ? (
                 <div className="flex gap-2 p-3 flex-wrap justify-center">
                   {imagePreviews.map((src, i) => (
-                    <img key={i} src={src} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-300" />
+                    <div key={i} className="relative group">
+                      <img src={src} alt="" className="h-16 w-16 object-cover rounded-lg border border-gray-300" />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeImage(i); }}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                        title="Xóa ảnh này"
+                      >✕</button>
+                    </div>
                   ))}
-                  <div className="h-16 w-16 rounded-lg border border-dashed border-gray-400 flex items-center justify-center text-gray-500 text-xs">+Thêm</div>
+                  <div className="h-16 w-16 rounded-lg border border-dashed border-gray-400 flex items-center justify-center text-gray-500 text-xs flex-col gap-0.5">
+                    <span className="text-lg leading-none">+</span>
+                    <span>Thêm</span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center py-6 text-gray-600">
