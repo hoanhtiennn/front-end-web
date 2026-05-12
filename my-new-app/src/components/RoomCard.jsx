@@ -56,7 +56,7 @@ const RoomCard = ({ room, index, onClick }) => {
             </span>
           ) : (
             <span className="bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white rounded-full uppercase border border-white/40 tracking-wider">
-              {room.tag || "Mới"}
+              FREE
             </span>
           )}
 
