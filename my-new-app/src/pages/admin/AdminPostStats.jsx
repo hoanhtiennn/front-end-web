@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area,
+} from "recharts";
+import {
   TrendingUp, CreditCard, BarChart2, RefreshCw, AlertTriangle,
   Crown, Zap, Package, DollarSign, Calendar,
 } from "lucide-react";
@@ -30,71 +34,83 @@ function generateFallbackData() {
   }));
 }
 
-/**
- * Component biểu đồ cột (Bar Chart) tự chế bằng CSS hiển thị số lượng gói PRO/ULTRA
- */
-function BarChart({ data, planKeys }) {
-  const maxVal = Math.max(...data.map(d => planKeys.reduce((s, k) => s + (d[k] || 0), 0)), 1);
-
+/** Tooltip tùy chỉnh cho biểu đồ gói bán */
+function PlanTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="flex items-end gap-1 h-48 w-full">
-      {data.map((row, i) => {
-        const total = planKeys.reduce((s, k) => s + (row[k] || 0), 0);
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-            {/* Thanh cột xếp chồng */}
-            <div
-              className="relative w-full rounded-t-md overflow-hidden flex flex-col-reverse transition-all duration-500"
-              style={{ height: `${(total / maxVal) * 100}%`, minHeight: total > 0 ? "4px" : "0" }}
-              title={`${row.month}: ${total} gói`}
-            >
-              {planKeys.map(k => {
-                const pct = total > 0 ? ((row[k] || 0) / total) * 100 : 0;
-                return pct > 0 ? (
-                  <div
-                    key={k}
-                    style={{ height: `${pct}%`, backgroundColor: PLAN_COLORS[k]?.bar || "#94a3b8" }}
-                    className="w-full transition-all"
-                  />
-                ) : null;
-              })}
-            </div>
-
-            {/* Tooltip số lượng */}
-            <span className="hidden group-hover:block absolute -translate-y-10 text-[10px] font-bold bg-gray-900 text-white px-2 py-0.5 rounded pointer-events-none z-10">
-              {total}
-            </span>
-
-            {/* Nhãn tháng */}
-            <span className="text-[10px] text-gray-400 font-medium">{row.month}</span>
-          </div>
-        );
-      })}
+    <div className="bg-gray-900 text-white text-xs rounded-xl px-3 py-2 shadow-xl">
+      <p className="font-bold mb-1">{label}</p>
+      {payload.map(p => (
+        <p key={p.dataKey} style={{ color: p.color }}>
+          {p.dataKey}: <span className="font-black">{p.value} gói</span>
+        </p>
+      ))}
     </div>
   );
 }
 
-/**
- * Component biểu đồ cột đơn hiển thị tổng doanh thu
- */
-function RevenueChart({ data }) {
-  const maxVal = Math.max(...data.map(d => d.totalRevenue || 0), 1);
+/** Tooltip tùy chỉnh cho biểu đồ doanh thu */
+function RevenueTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="flex items-end gap-1 h-36 w-full">
-      {data.map((row, i) => {
-        const pct = (row.totalRevenue / maxVal) * 100;
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-            <div
-              className="w-full rounded-t-md bg-gradient-to-t from-emerald-500 to-emerald-300 transition-all duration-500"
-              style={{ height: `${pct}%`, minHeight: row.totalRevenue > 0 ? "4px" : "0" }}
-              title={`${row.month}: ${row.totalRevenue?.toLocaleString("vi-VN")}đ`}
-            />
-            <span className="text-[10px] text-gray-400 font-medium">{row.month}</span>
-          </div>
-        );
-      })}
+    <div className="bg-gray-900 text-white text-xs rounded-xl px-3 py-2 shadow-xl">
+      <p className="font-bold mb-1">{label}</p>
+      <p style={{ color: "#34d399" }}>
+        Doanh thu: <span className="font-black">{payload[0]?.value?.toLocaleString("vi-VN")}đ</span>
+      </p>
     </div>
+  );
+}
+
+/** Biểu đồ cột nhóm PRO / ULTRA bằng Recharts */
+function PlanBarChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%" barGap={2}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} allowDecimals={false} />
+        <Tooltip content={<PlanTooltip />} cursor={{ fill: "#f9fafb" }} />
+        <Legend
+          wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+          formatter={v => <span style={{ color: "#374151", fontWeight: 600 }}>{v}</span>}
+        />
+        <Bar dataKey="PRO"   fill={PLAN_COLORS.PRO.bar}   radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={800} />
+        <Bar dataKey="ULTRA" fill={PLAN_COLORS.ULTRA.bar}  radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={900} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Biểu đồ vùng gradient doanh thu bằng Recharts */
+function RevenueAreaChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <AreaChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+        <defs>
+          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%"  stopColor="#10b981" stopOpacity={0.25} />
+            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+        <YAxis
+          tick={{ fontSize: 10, fill: "#9ca3af" }}
+          axisLine={false} tickLine={false}
+          tickFormatter={v => v >= 1_000_000 ? `${(v/1_000_000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v}
+        />
+        <Tooltip content={<RevenueTooltip />} cursor={{ stroke: "#10b981", strokeWidth: 1, strokeDasharray: "4 2" }} />
+        <Area
+          type="monotone" dataKey="totalRevenue" name="Doanh thu"
+          stroke="#10b981" strokeWidth={2.5}
+          fill="url(#revenueGrad)"
+          dot={{ fill: "#10b981", r: 3, strokeWidth: 0 }}
+          activeDot={{ r: 5, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }}
+          animationDuration={900}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -276,9 +292,9 @@ export default function AdminPostStats() {
           </div>
 
           {loading ? (
-            <div className="h-48 bg-gray-50 animate-pulse rounded-lg" />
+            <div className="h-56 bg-gray-50 animate-pulse rounded-lg" />
           ) : (
-            <BarChart data={monthlyData} planKeys={planKeys} />
+            <PlanBarChart data={monthlyData} />
           )}
         </div>
 
@@ -294,7 +310,7 @@ export default function AdminPostStats() {
             </div>
           </div>
 
-          <div className="mt-3 mb-4">
+          <div className="mt-3 mb-2">
             <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
               <span className="w-3 h-3 rounded-sm bg-emerald-400" />
               Doanh thu
@@ -302,9 +318,9 @@ export default function AdminPostStats() {
           </div>
 
           {loading ? (
-            <div className="h-36 bg-gray-50 animate-pulse rounded-lg" />
+            <div className="h-44 bg-gray-50 animate-pulse rounded-lg" />
           ) : (
-            <RevenueChart data={monthlyData} />
+            <RevenueAreaChart data={monthlyData} />
           )}
         </div>
       </div>

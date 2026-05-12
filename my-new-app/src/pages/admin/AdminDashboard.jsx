@@ -52,7 +52,7 @@ StatCard.defaultProps = {
 /**
  * Component trang chủ của Admin, hiển thị bảng tóm tắt và số liệu tổng quan của hệ thống
  */
-export default function AdminDashboard() {
+export default function AdminDashboard({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -198,14 +198,18 @@ export default function AdminDashboard() {
           <h3 className="font-bold text-gray-900 mb-5">Truy Cập Nhanh</h3>
           <div className="space-y-3">
             {[
-              { label: "Quản lý người dùng", sub: `${stats?.totalUsers ?? "..."} tài khoản`,    icon: Users,       color: "text-blue-600",   bg: "bg-blue-50" },
-              { label: "Duyệt xác minh",      sub: verificationSub,                              icon: ShieldCheck, color: "text-orange-500", bg: "bg-orange-50" },
-              { label: "Bài đăng hệ thống",   sub: `${stats?.totalPosts ?? "..."} bài tổng cộng`, icon: Home,      color: "text-green-600",  bg: "bg-green-50" },
-              { label: "Gói dịch vụ",         sub: `${stats?.totalSubscriptions ?? "..."} lượt`, icon: TrendingUp, color: "text-purple-600", bg: "bg-purple-50" },
+              { label: "Quản lý người dùng", sub: `${stats?.totalUsers ?? "..."} tài khoản`,     icon: Users,       color: "text-blue-600",   bg: "bg-blue-50",    to: "users" },
+              { label: "Duyệt xác minh",      sub: verificationSub,                               icon: ShieldCheck, color: "text-orange-500", bg: "bg-orange-50",  to: "verifications" },
+              { label: "Bài đăng hệ thống",   sub: `${stats?.totalPosts ?? "..."} bài tổng cộng`, icon: Home,        color: "text-green-600",  bg: "bg-green-50",   to: "posts" },
+              { label: "Gói dịch vụ",         sub: `${stats?.totalSubscriptions ?? "..."} lượt`,  icon: TrendingUp,  color: "text-purple-600", bg: "bg-purple-50",  to: "plans" },
             ].map(item => {
               const ItemIcon = item.icon;
               return (
-                <div key={item.label} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:opacity-80 transition-opacity ${item.bg}`}>
+                <div
+                  key={item.label}
+                  onClick={() => onNavigate?.(item.to)}
+                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:opacity-80 active:scale-[0.98] transition-all ${item.bg}`}
+                >
                   <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-sm">
                     <ItemIcon size={16} className={item.color} />
                   </div>

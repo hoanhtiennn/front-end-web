@@ -20,7 +20,7 @@ export default function AdminApp({ onExit }) {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <AdminDashboard />;
+        return <AdminDashboard onNavigate={setActiveTab} />;
       case "users":
         return <AdminUsers />;
       case "verifications":

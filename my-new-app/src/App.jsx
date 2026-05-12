@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { UserProvider, useUser } from "./context/UserContext";
@@ -55,6 +55,9 @@ function MainApp() {
   const [currentEndpoint, setCurrentEndpoint] = useState("/api/posts");
   const [currentParams, setCurrentParams] = useState({});
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const isFirstRender = useRef(true);
+  const prevSearchTerm = useRef("");
+  const prevFilters = useRef(filters);
 
   const DEFAULT_PAGE_SIZE = 16;
 
@@ -457,54 +460,113 @@ function MainApp() {
 
   /**
    * Luồng tìm kiếm đa bộ lọc (Text, Giá, Loại phòng, Tiện ích).
-   * Kết hợp gọi API tìm kiếm gốc và lọc tiếp ở client-side (với mảng tiện ích).
+   * Khi có lọc tiện ích: fetch tất cả các trang rồi lọc client-side để không bỏ sót bài nào.
    */
-  const handleSearch = async () =>
-    enforceAuth(() => {
-      const searchParams = {};
-      if (searchTerm.trim()) searchParams.title = searchTerm.trim();
-      if (filters.minPrice) searchParams.minPrice = filters.minPrice;
-      if (filters.maxPrice) searchParams.maxPrice = filters.maxPrice;
-      if (filters.roomType) searchParams.roomType = filters.roomType;
+  const executeSearch = useCallback(async () => {
+    const searchParams = {};
+    if (searchTerm.trim()) searchParams.title = searchTerm.trim();
+    if (filters.minPrice) searchParams.minPrice = filters.minPrice;
+    if (filters.maxPrice) searchParams.maxPrice = filters.maxPrice;
+    if (filters.roomType) searchParams.roomType = filters.roomType;
 
-      const fetchSearch = async () => {
-        try {
-          const { items, meta } = await loadRooms({
+    const hasAmenityFilter = filters.amenities && filters.amenities.length > 0;
+
+    try {
+      if (hasAmenityFilter) {
+        // Fetch tất cả các trang để lọc tiện ích không bỏ sót bài nào
+        setIsLoadingRooms(true);
+        const token = localStorage.getItem("userToken");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        let allItems = [];
+        let page = 1;
+        let keepFetching = true;
+
+        while (keepFetching) {
+          const { items, meta } = await fetchPostsPage({
             endpoint: "/api/posts",
+            headers,
             params: searchParams,
-            page: 1,
+            page,
           });
 
-          let resultRooms = items;
+          const mapped = items.map(mapPostToRoom);
+          allItems = [...allItems, ...mapped];
 
-          if (filters.amenities && filters.amenities.length > 0) {
-            resultRooms = resultRooms.filter((room) => {
-              const roomAmenities = new Set(
-                room.amenities.map((a) =>
-                  (a.type || a.name || a || "").toString().toLowerCase(),
-                ),
-              );
+          keepFetching = meta.hasMore && page < (meta.totalPages ?? 999);
+          page += 1;
 
-              return filters.amenities.every((selectedAmenity) =>
-                roomAmenities.has(selectedAmenity.toLowerCase()),
-              );
-            });
-
-            setRooms(resultRooms);
-            setTotalResults(resultRooms.length);
-            setHasMore(false);
-            setTotalPages(1);
-          } else {
-            setTotalResults(meta.totalItems ?? resultRooms.length);
-          }
-        } catch (err) {
-          console.error("Search API Error:", err);
-          alert("Lỗi khi tìm kiếm, vui lòng thử lại!");
+          // Giới hạn tối đa 10 trang để tránh quá tải
+          if (page > 10) keepFetching = false;
         }
-      };
 
-      fetchSearch();
-    });
+        // Lọc tiện ích: kiểm tra nhiều dạng dữ liệu backend có thể trả về
+        const filtered = allItems.filter((room) => {
+          const roomAmenityNames = new Set(
+            (room.amenities || []).map((a) => {
+              const raw = a?.type || a?.name || a?.label || a || "";
+              return raw.toString().trim().toLowerCase();
+            })
+          );
+
+          return filters.amenities.every((sel) =>
+            roomAmenityNames.has(sel.trim().toLowerCase())
+          );
+        });
+
+        // Sắp xếp theo plan/score như loadRooms
+        const planPriority = { ULTRA: 2, PRO: 1, FREE: 0 };
+        filtered.sort((a, b) => {
+          const tierDiff = (planPriority[b.planType] ?? 0) - (planPriority[a.planType] ?? 0);
+          if (tierDiff !== 0) return tierDiff;
+          return (b.rankingScore ?? 0) - (a.rankingScore ?? 0);
+        });
+
+        setRooms(filtered);
+        setTotalResults(filtered.length);
+        setCurrentPage(1);
+        setTotalPages(1);
+        setHasMore(false);
+        setIsLoadingRooms(false);
+      } else {
+        // Không có lọc tiện ích → gọi API bình thường
+        const { meta } = await loadRooms({
+          endpoint: "/api/posts",
+          params: searchParams,
+          page: 1,
+        });
+        setTotalResults(meta.totalItems ?? meta.totalPages);
+      }
+    } catch (err) {
+      console.error("Search API Error:", err);
+      setIsLoadingRooms(false);
+    }
+  }, [searchTerm, filters, loadRooms, fetchPostsPage]);
+
+  // Debounce chỉ cho ô gõ text (400ms)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      prevSearchTerm.current = searchTerm;
+      prevFilters.current = filters;
+      return;
+    }
+
+    // Nếu searchTerm thay đổi → debounce 400ms
+    if (searchTerm !== prevSearchTerm.current) {
+      prevSearchTerm.current = searchTerm;
+      const timer = setTimeout(() => {
+        executeSearch();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+
+    // Nếu filters thay đổi (giá, loại phòng, tiện ích) → trigger ngay
+    if (filters !== prevFilters.current) {
+      prevFilters.current = filters;
+      executeSearch();
+    }
+  }, [searchTerm, filters, executeSearch]);
 
   if (isAdminView) {
     return <AdminApp onExit={() => setIsAdminView(false)} />;
@@ -586,7 +648,7 @@ function MainApp() {
       <SearchBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        onSearch={handleSearch}
+        onSearch={executeSearch}
         onLocationClick={handleGetLocation}
         isLocating={isLocating}
         filters={filters}

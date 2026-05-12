@@ -35,7 +35,6 @@ const SearchBar = ({
               className="w-full bg-transparent outline-none text-gray-900 font-semibold placeholder-gray-400 text-sm md:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearch()}
             />
           </div>
           <div className="flex flex-wrap md:flex-nowrap items-center justify-center md:justify-end gap-2 w-full md:w-auto shrink-0">
@@ -82,14 +81,6 @@ const SearchBar = ({
                 {searchRadius} km
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onSearch}
-              className="flex items-center justify-center gap-2 shrink-0 rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-6 py-2.5 text-sm font-black text-white hover:shadow-lg hover:shadow-rose-500/40 hover:scale-105 transition-all duration-300"
-            >
-              <Search size={16} strokeWidth={2.5} />
-              <span className="hidden md:inline">TÌM KIẾM</span>
-            </button>
           </div>
         </div>
 
@@ -180,14 +171,6 @@ const SearchBar = ({
                 ))}
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={onSearch}
-              className="md:hidden mt-2 flex items-center justify-center rounded-xl bg-linear-to-r from-rose-500 to-orange-500 px-6 py-3 text-sm font-black text-white hover:shadow-lg transition-all"
-            >
-              ÁP DỤNG LỌC
-            </button>
           </div>
         )}
       </div>
